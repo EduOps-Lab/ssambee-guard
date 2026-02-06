@@ -1,1 +1,10 @@
 node_modules/
+**/*/dist
+
+.terraform/
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+*zip

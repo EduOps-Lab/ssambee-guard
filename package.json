@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "esbuild index.ts --bundle --minify --platform=node --target=node22 --outfile=dist/index.js"
+    "build": "esbuild functions/sentry-to-discord/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/sentry-to-discord/dist/index.js"
   },
   "keywords": [],
   "author": "",

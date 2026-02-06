@@ -26,7 +26,25 @@ resource "aws_apigatewayv2_api" "lambda_api" {
   protocol_type = "HTTP"
 }
 
-# (이후 람다 호출 권한 및 스테이지 설정 추가...)data "archive_file" "lambda_zip"  {
+resource "aws_apigatewayv2_integration" "sentry_lambda" {
+  api_id           = aws_apigatewayv2_api.lambda_api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.sentry_notifier.invoke_arn
+}
+
+# 어떤 주소(/webhook)로 요청을 받을지 결정
+resource "aws_apigatewayv2_route" "sentry_route" {
+  api_id    = aws_apigatewayv2_api.lambda_api.id
+  route_key = "POST /webhook"
+  target    = "integrations/${aws_apigatewayv2_integration.sentry_lambda.id}"
+}
+
+# 실제 URL을 활성화하는 스테이지
+resource "aws_apigatewayv2_stage" "sentry_stage" {
+  api_id      = aws_apigatewayv2_api.lambda_api.id
+  name        = "$default"
+  auto_deploy = true
+}
 
 # 람다 실행을 위한 IAM Role (반드시 필요!)
 resource "aws_iam_role" "lambda_exec" {
