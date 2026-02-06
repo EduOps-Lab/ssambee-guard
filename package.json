@@ -1,0 +1,22 @@
+{
+  "name": "ssambee-guard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "esbuild index.ts --bundle --minify --platform=node --target=node22 --outfile=dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "dependencies": {
+    "axios": "^1.13.4"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.160",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.9.3"
+  }
+}
