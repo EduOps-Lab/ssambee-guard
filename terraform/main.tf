@@ -74,3 +74,42 @@ resource "aws_lambda_permission" "api_gw" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.lambda_api.execution_arn}/*/*"
 }
+
+# S3 버킷 생성 (상태 파일 저장소)
+resource "aws_s3_bucket" "tf_state" {
+  bucket = "ssambee-tf-state"
+
+  # 실수로 버킷이 삭제되는 것을 방지 (운영 환경 권장)
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# 모든 퍼블릭 액세스 차단
+resource "aws_s3_bucket_public_access_block" "tf_state_block" {
+  bucket = aws_s3_bucket.tf_state.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# 버킷 버전 관리 (실수로 상태 파일이 깨졌을 때 복구용)
+resource "aws_s3_bucket_versioning" "tf_state_versioning" {
+  bucket = aws_s3_bucket.tf_state.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# 서버 측 기본 암호화 (저장되는 파일 자동 암호화)
+resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state_crypto" {
+  bucket = aws_s3_bucket.tf_state.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
