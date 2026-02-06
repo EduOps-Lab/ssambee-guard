@@ -27,3 +27,32 @@ resource "aws_apigatewayv2_api" "lambda_api" {
 }
 
 # (이후 람다 호출 권한 및 스테이지 설정 추가...)data "archive_file" "lambda_zip"  {
+
+# 람다 실행을 위한 IAM Role (반드시 필요!)
+resource "aws_iam_role" "lambda_exec" {
+  name = "sentry_lambda_exec_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+}
+
+# 람다 로그를 위한 기본 권한 연결
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# API Gateway가 람다를 깨울 수 있는 권한
+resource "aws_lambda_permission" "api_gw" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.sentry_notifier.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.lambda_api.execution_arn}/*/*"
+}
