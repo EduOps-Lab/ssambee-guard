@@ -1,0 +1,13 @@
+[tools]
+node = "22.14.0"
+pnpm =  "10.28.0"
+
+[settings]
+# 버전이 설치되어 있지 않으면 자동으로 설치할지 여부
+asdf_compat = true
+# 현재 터미널에 지정된 버전이 없으면 에러를 내거나 자동 설치를 유도
+experimental = true
+
+# mise run 테스트
+[tasks]
+hello = "echo hello from mise"
