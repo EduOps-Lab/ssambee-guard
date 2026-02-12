@@ -1,3 +1,19 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 6.0" # 최신 버전 사용 권장
+    }
+  }
+
+  # 👈 이 부분이 있어야 GitHub Actions와 로컬이 같은 장부를 공유합니다.
+  backend "s3" {
+    bucket = "ssambee-tf-state"
+    key    = "terraform.tfstate"
+    region = "ap-northeast-2"
+  }
+}
+
 # 람다 코드 압축
 data "archive_file" "lambda_zip" {
   type        = "zip"
