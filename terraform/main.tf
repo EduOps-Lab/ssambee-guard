@@ -14,16 +14,23 @@ terraform {
   }
 }
 
-# 람다 코드 압축
-data "archive_file" "lambda_zip" {
+# 람다 코드 압축 (Sentry)
+data "archive_file" "sentry_lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../functions/sentry-to-discord/dist"
   output_path = "${path.module}/sentry_to_discord.zip"
 }
 
-# 람다 함수 생성
+# 람다 코드 압축 (Kakao)
+data "archive_file" "kakao_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../functions/kakao-notification/dist"
+  output_path = "${path.module}/kakao_notification.zip"
+}
+
+# 람다 함수 생성 (Sentry)
 resource "aws_lambda_function" "sentry_notifier" {
-  filename      = data.archive_file.lambda_zip.output_path
+  filename      = data.archive_file.sentry_lambda_zip.output_path
   function_name = "sentry-to-discord-notifier"
   role          = aws_iam_role.lambda_exec.arn
   handler       = "index.handler"
@@ -34,6 +41,16 @@ resource "aws_lambda_function" "sentry_notifier" {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
     }
   }
+}
+
+# 람다 함수 생성 (Kakao)
+resource "aws_lambda_function" "kakao_notifier" {
+  filename      = data.archive_file.kakao_lambda_zip.output_path
+  function_name = "kakao-notification-notifier"
+  role          = aws_iam_role.lambda_exec.arn
+  handler       = "index.handler"
+  runtime       = "nodejs22.x"
+  timeout       = 30
 }
 
 # HTTP API Gateway (가장 저렴한 v2)
@@ -64,7 +81,7 @@ resource "aws_apigatewayv2_stage" "sentry_stage" {
 
 # 람다 실행을 위한 IAM Role (반드시 필요!)
 resource "aws_iam_role" "lambda_exec" {
-  name = "sentry_lambda_exec_role"
+  name = "ssambee_guard_lambda_exec_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -82,6 +99,34 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# SQS 실행 권한 추가
+resource "aws_iam_role_policy_attachment" "lambda_sqs" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
+}
+
+# SSM 파라미터 읽기 권한 추가
+resource "aws_iam_policy" "lambda_ssm" {
+  name        = "ssambee_guard_lambda_ssm_policy"
+  description = "Allow lambda to read Solapi keys from SSM"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "ssm:GetParameters"
+        Effect   = "Allow"
+        Resource = "arn:aws:ssm:${var.aws_region}:*:parameter/ssambee-guard/solapi/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_ssm_attach" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_ssm.arn
+}
+
 # API Gateway가 람다를 깨울 수 있는 권한
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
@@ -89,6 +134,19 @@ resource "aws_lambda_permission" "api_gw" {
   function_name = aws_lambda_function.sentry_notifier.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.lambda_api.execution_arn}/*/*"
+}
+
+# SQS 큐 생성 (Kakao 알림용)
+resource "aws_sqs_queue" "kakao_queue" {
+  name                      = "kakao-notification-queue"
+  message_retention_seconds = 86400
+  visibility_timeout_seconds = 60
+}
+
+# SQS를 람다의 트리거로 설정
+resource "aws_lambda_event_source_mapping" "kakao_sqs_trigger" {
+  event_source_arn = aws_sqs_queue.kakao_queue.arn
+  function_name    = aws_lambda_function.kakao_notifier.arn
 }
 
 # S3 버킷 생성 (상태 파일 저장소)
