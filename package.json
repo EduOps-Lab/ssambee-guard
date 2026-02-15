@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "build:discord": "esbuild functions/sentry-to-discord/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/sentry-to-discord/dist/index.js",
+    "build:redis": "esbuild functions/sentry-to-discord/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/sentry-to-discord/dist/index.js",
     "build:kakao": "esbuild functions/kakao-notification/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/kakao-notification/dist/index.js",
-    "build": "pnpm run build:discord && pnpm run build:kakao"
+    "build": "pnpm run build:redis && pnpm run build:kakao && pnpm run build:dashboard",
+    "build:dashboard": "esbuild functions/monitoring-dashboard/src/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/monitoring-dashboard/dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +22,12 @@
     "@types/aws-lambda": "^8.10.160",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.2.3",
+    "@libsql/client": "^0.17.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.3.6",
     "esbuild": "^0.27.3",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
