@@ -10,7 +10,7 @@ variable "discord_webhook_url" {
   sensitive   = true # 보안을 위해 로그에 노출되지 않도록
 }
 
-variable "turso_url" {
+variable "turso_database_url" {
   description = "Turso DB URL"
   type        = string
 }

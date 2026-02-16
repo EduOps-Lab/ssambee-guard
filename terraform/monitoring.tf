@@ -16,7 +16,7 @@ resource "aws_lambda_function" "monitoring_dashboard" {
 
   environment {
     variables = {
-      TURSO_URL              = var.turso_url
+      TURSO_DATABASE_URL              = var.turso_database_url
       TURSO_AUTH_TOKEN       = var.turso_auth_token
       JWT_SECRET             = var.jwt_secret
       INTERNAL_INGEST_SECRET = var.internal_ingest_secret
@@ -32,7 +32,7 @@ resource "aws_lambda_function_url" "monitoring_url" {
 
   cors {
     allow_origins     = ["*"] # Adjust to your Vercel URL in production
-    allow_methods     = ["POST", "GET", "OPTIONS"]
+    allow_methods     = ["*"]
     allow_headers     = ["content-type", "authorization"]
     expose_headers    = ["x-amzn-header", "x-amz-cf-id"]
     max_age           = 3600

@@ -14,11 +14,11 @@ terraform {
   }
 }
 
-# 람다 코드 압축 (Sentry)
-data "archive_file" "sentry_lambda_zip" {
+# 람다 코드 압축 (central-monitor)
+data "archive_file" "monitor_lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../functions/sentry-to-discord/dist"
-  output_path = "${path.module}/sentry_to_discord.zip"
+  source_dir  = "${path.module}/../functions/central-monitor/dist"
+  output_path = "${path.module}/central-monitor.zip"
 }
 
 # 람다 코드 압축 (Kakao)
@@ -28,10 +28,10 @@ data "archive_file" "kakao_lambda_zip" {
   output_path = "${path.module}/kakao_notification.zip"
 }
 
-# 람다 함수 생성 (Sentry)
-resource "aws_lambda_function" "sentry_notifier" {
-  filename      = data.archive_file.sentry_lambda_zip.output_path
-  function_name = "sentry-to-discord-notifier"
+# 람다 함수 생성 (central-monitor)
+resource "aws_lambda_function" "central_monitor" {
+  filename      = data.archive_file.monitor_lambda_zip.output_path
+  function_name = "central-monitor-notifier"
   role          = aws_iam_role.lambda_exec.arn
   handler       = "index.handler"
   runtime       = "nodejs22.x"
@@ -39,6 +39,8 @@ resource "aws_lambda_function" "sentry_notifier" {
   environment {
     variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
+      TURSO_DATABASE_URL                        = var.turso_database_url
+      TURSO_AUTH_TOKEN        = var.turso_auth_token
     }
   }
 }
@@ -59,21 +61,21 @@ resource "aws_apigatewayv2_api" "lambda_api" {
   protocol_type = "HTTP"
 }
 
-resource "aws_apigatewayv2_integration" "sentry_lambda" {
+resource "aws_apigatewayv2_integration" "monitor_lambda" {
   api_id           = aws_apigatewayv2_api.lambda_api.id
   integration_type = "AWS_PROXY"
-  integration_uri  = aws_lambda_function.sentry_notifier.invoke_arn
+  integration_uri  = aws_lambda_function.central_monitor.invoke_arn
 }
 
 # 어떤 주소(/webhook)로 요청을 받을지 결정
-resource "aws_apigatewayv2_route" "sentry_route" {
+resource "aws_apigatewayv2_route" "monitor_route" {
   api_id    = aws_apigatewayv2_api.lambda_api.id
   route_key = "POST /webhook"
-  target    = "integrations/${aws_apigatewayv2_integration.sentry_lambda.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.monitor_lambda.id}"
 }
 
 # 실제 URL을 활성화하는 스테이지
-resource "aws_apigatewayv2_stage" "sentry_stage" {
+resource "aws_apigatewayv2_stage" "monitor_stage" {
   api_id      = aws_apigatewayv2_api.lambda_api.id
   name        = "$default"
   auto_deploy = true
@@ -131,7 +133,7 @@ resource "aws_iam_role_policy_attachment" "lambda_ssm_attach" {
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.sentry_notifier.function_name
+  function_name = aws_lambda_function.central_monitor.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.lambda_api.execution_arn}/*/*"
 }
