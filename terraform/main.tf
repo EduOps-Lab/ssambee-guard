@@ -2,11 +2,10 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 6.0" # 최신 버전 사용 권장
+      version = ">= 6.0"
     }
   }
 
-  # 👈 이 부분이 있어야 GitHub Actions와 로컬이 같은 장부를 공유합니다.
   backend "s3" {
     bucket = "ssambee-tf-state"
     key    = "terraform.tfstate"
@@ -81,7 +80,7 @@ resource "aws_apigatewayv2_stage" "monitor_stage" {
   auto_deploy = true
 }
 
-# 람다 실행을 위한 IAM Role (반드시 필요!)
+# 람다 실행을 위한 IAM Role
 resource "aws_iam_role" "lambda_exec" {
   name = "ssambee_guard_lambda_exec_role"
 
@@ -154,24 +153,19 @@ resource "aws_lambda_event_source_mapping" "kakao_sqs_trigger" {
 # S3 버킷 생성 (상태 파일 저장소)
 resource "aws_s3_bucket" "tf_state" {
   bucket = "ssambee-tf-state"
-
-  # 실수로 버킷이 삭제되는 것을 방지 (운영 환경 권장)
   lifecycle {
     prevent_destroy = true
   }
 }
 
-# 모든 퍼블릭 액세스 차단
 resource "aws_s3_bucket_public_access_block" "tf_state_block" {
   bucket = aws_s3_bucket.tf_state.id
-
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-# 버킷 버전 관리 (실수로 상태 파일이 깨졌을 때 복구용)
 resource "aws_s3_bucket_versioning" "tf_state_versioning" {
   bucket = aws_s3_bucket.tf_state.id
   versioning_configuration {
@@ -179,10 +173,8 @@ resource "aws_s3_bucket_versioning" "tf_state_versioning" {
   }
 }
 
-# 서버 측 기본 암호화 (저장되는 파일 자동 암호화)
 resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state_crypto" {
   bucket = aws_s3_bucket.tf_state.id
-
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"

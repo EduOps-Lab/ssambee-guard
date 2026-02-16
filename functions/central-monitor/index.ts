@@ -20,7 +20,6 @@ interface RedisErrorPayload {
   guide: string;
 }
 
-/** Turso 클라이언트 설정 (핸들러 외부 선언으로 Warm Start 활용) */
 const turso = createClient({
   url: process.env.TURSO_DATABASE_URL!,
   authToken: process.env.TURSO_AUTH_TOKEN!,
@@ -36,25 +35,12 @@ function createSystemAlertPayload(body: SystemMetricPayload) {
     avatar_url: "https://cdn-icons-png.flaticon.com/512/2702/2702871.png",
     embeds: [
       {
-        title:
-          usage >= 90 ? "🚨 [위험] 서버 자원 고갈" : "⚠️ [주의] 서버 자원 압박",
+        title: usage >= 90 ? "🚨 [위험] 서버 자원 고갈" : "⚠️ [주의] 서버 자원 압박",
         color: color,
         fields: [
-          {
-            name: "메모리 사용량",
-            value: `**${body.memoryUsage}%**`,
-            inline: true,
-          },
-          {
-            name: "CPU Load",
-            value: `\`${body.cpuLoad.toFixed(2)}\``,
-            inline: true,
-          },
-          {
-            name: "서버 가동 시간",
-            value: `${(body.uptime / 3600).toFixed(1)}시간`,
-            inline: false,
-          },
+          { name: "메모리 사용량", value: `**${body.memoryUsage}%**`, inline: true },
+          { name: "CPU Load", value: `\`${body.cpuLoad.toFixed(2)}\``, inline: true },
+          { name: "서버 가동 시간", value: `${(body.uptime / 3600).toFixed(1)}시간`, inline: false },
         ],
         timestamp: body.timestamp,
       },
@@ -121,31 +107,37 @@ export const handler = async (
         console.error("Database Insert Error", dbError);
       }
 
-      /** 알림 발송 조건 */
       if (payload.isAlert) {
         const discordPayload = createSystemAlertPayload(payload);
         await axios.post(DISCORD_WEBHOOK_URL, discordPayload);
+        try {
+          await turso.execute({
+            sql: "INSERT INTO alerts (type, message, metadata, created_at) VALUES (?, ?, ?, ?)",
+            args: ["MEMORY_HIGH", `Memory usage at ${payload.memoryUsage}%`, JSON.stringify(payload), payload.timestamp],
+          });
+        } catch (dbError) {
+          console.error("Alert Database Insert Error", dbError);
+        }
       }
     } else if (body.type === "REDIS_ERROR") {
-
-    /** CASE2: Redis 에러 */
+      const payload = body as RedisErrorPayload;
       if (DISCORD_WEBHOOK_URL) {
-        const discordPayload = createRedisErrorPayload(
-          body as RedisErrorPayload,
-        );
+        const discordPayload = createRedisErrorPayload(payload);
         await axios.post(DISCORD_WEBHOOK_URL, discordPayload);
+        try {
+          await turso.execute({
+            sql: "INSERT INTO alerts (type, message, metadata, created_at) VALUES (?, ?, ?, ?)",
+            args: ["REDIS_ERROR", payload.message, JSON.stringify(payload), payload.timestamp],
+          });
+        } catch (dbError) {
+          console.error("Alert Database Insert Error", dbError);
+        }
       }
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Success" }),
-    };
+    return { statusCode: 200, body: JSON.stringify({ message: "Success" }) };
   } catch (error) {
     console.error("Lambda Error", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Internal Server Error" }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: "Internal Server Error" }) };
   }
 };

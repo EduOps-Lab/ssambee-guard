@@ -7,7 +7,8 @@
     "test": "jest",
     "build:monitor": "esbuild functions/central-monitor/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/central-monitor/dist/index.js",
     "build:kakao": "esbuild functions/kakao-notification/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/kakao-notification/dist/index.js",
-    "build": "pnpm run build:monitor && pnpm run build:kakao && pnpm run build:dashboard",
+    "build:logcleanup": "esbuild functions/log-cleanup/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/log-cleanup/dist/index.js",
+    "build": "pnpm run build:monitor && pnpm run build:kakao && pnpm run build:dashboard && pnpm run build:logcleanup",
     "build:dashboard": "esbuild functions/monitoring-dashboard/src/index.ts --bundle --minify --platform=node --target=node22 --outfile=functions/monitoring-dashboard/dist/index.js"
   },
   "keywords": [],
