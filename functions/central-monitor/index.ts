@@ -25,9 +25,10 @@ const turso = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN!,
 });
 
+/** Discord 알람 생성기 (System Metric)전용 */
 function createSystemAlertPayload(body: SystemMetricPayload) {
   const usage = parseFloat(body.memoryUsage);
-  const color = usage >= 90 ? 0xff0000 : 0xffaa00;
+  const color = usage >= 90 ? 0xff0000 : 0xffaa00; //90%레드 , 80% 오렌지
 
   return {
     username: "응급실 (System Monitor)",
@@ -47,6 +48,7 @@ function createSystemAlertPayload(body: SystemMetricPayload) {
   };
 }
 
+/** Redis 에러에 대한 Discord Payload 생성 */
 function createRedisErrorPayload(body: RedisErrorPayload) {
   return {
     username: "인메모리DB 관리자",
@@ -54,11 +56,15 @@ function createRedisErrorPayload(body: RedisErrorPayload) {
     embeds: [
       {
         title: `🚨 [장애] ${body.service}`,
-        color: 15158332,
+        color: 15158332, // 빨간색
         fields: [
           { name: "서버 환경", value: `\`${body.server}\``, inline: true },
           { name: "발생 시각", value: body.timestamp, inline: true },
-          { name: "에러 메시지", value: `\`\`\`${body.message}\`\`\``, inline: false },
+          {
+            name: "에러 메시지",
+            value: `\`\`\`${body.message}\`\`\``,
+            inline: false,
+          },
           { name: "💡 조치 가이드", value: `**${body.guide}**`, inline: false },
         ],
         footer: { text: "우리 프로젝트 인프라 관제팀" },
@@ -67,9 +73,14 @@ function createRedisErrorPayload(body: RedisErrorPayload) {
   };
 }
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+/** 메인 핸들러 */
+export const handler = async (
+  event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> => {
   try {
+    // 데이터 파싱
     if (!event.body) return { statusCode: 400, body: "No body" };
+
     const body = JSON.parse(event.body);
     const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
@@ -78,12 +89,19 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return { statusCode: 500, body: "Webhook configuration missing" };
     }
 
+    /** CASE1: 지표 데이터 */
     if (body.type === "SYSTEM_METRIC") {
       const payload = body as SystemMetricPayload;
       try {
+        // Turso DB INSERT (대시보드용)
         await turso.execute({
           sql: "INSERT INTO server_metrics (cpu_load, memory_usage, uptime, created_at) VALUES (?, ?, ?, ?)",
-          args: [payload.cpuLoad, parseFloat(payload.memoryUsage), payload.uptime, payload.timestamp],
+          args: [
+            payload.cpuLoad,
+            parseFloat(payload.memoryUsage),
+            payload.uptime,
+            payload.timestamp,
+          ],
         });
       } catch (dbError) {
         console.error("Database Insert Error", dbError);

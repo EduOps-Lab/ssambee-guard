@@ -38,7 +38,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <label className="block mb-1 text-sm font-medium text-slate-300">Username</label>
             <input
               type="text"
-              className="p-2 w-full rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500 text-white"
+              className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -48,7 +48,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <label className="block mb-1 text-sm font-medium text-slate-300">Password</label>
             <input
               type="password"
-              className="p-2 w-full rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500 text-white"
+              className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -58,7 +58,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="py-2 w-full font-bold bg-blue-600 rounded transition duration-200 hover:bg-blue-700 disabled:opacity-50 text-white"
+            className="py-2 w-full font-bold text-white bg-blue-600 rounded transition duration-200 hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>

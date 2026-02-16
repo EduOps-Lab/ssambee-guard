@@ -38,8 +38,8 @@ resource "aws_lambda_function" "central_monitor" {
   environment {
     variables = {
       DISCORD_WEBHOOK_URL = var.discord_webhook_url
-      TURSO_DATABASE_URL  = var.turso_url
-      TURSO_AUTH_TOKEN    = var.turso_auth_token
+      TURSO_DATABASE_URL                        = var.turso_database_url
+      TURSO_AUTH_TOKEN        = var.turso_auth_token
     }
   }
 }

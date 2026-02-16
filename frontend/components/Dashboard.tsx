@@ -109,29 +109,29 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const latestMetric = metrics?.[metrics.length - 1]
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-6">
-      <header className="flex flex-col md:flex-row justify-between items-center mb-8 bg-slate-800 p-4 rounded-lg shadow-md border border-slate-700 gap-4">
-        <div className="flex items-center gap-3">
-          <Activity className="text-blue-400 w-8 h-8" />
+    <div className="p-6 min-h-screen bg-slate-900 text-slate-100">
+      <header className="flex flex-col gap-4 justify-between items-center p-4 mb-8 rounded-lg border shadow-md md:flex-row bg-slate-800 border-slate-700">
+        <div className="flex gap-3 items-center">
+          <Activity className="w-8 h-8 text-blue-400" />
           <h1 className="text-xl font-bold">Monitoring Central Control</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-3 items-center">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search logs..."
-              className="pl-9 pr-3 py-1 bg-slate-700 border border-slate-600 rounded-md text-sm focus:outline-none focus:border-blue-500"
+              className="py-1 pr-3 pl-9 text-sm rounded-md border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2 items-center">
             <Filter size={16} className="text-slate-400" />
             <select
-              className="bg-slate-700 border border-slate-600 rounded-md text-sm px-2 py-1 focus:outline-none"
+              className="px-2 py-1 text-sm rounded-md border bg-slate-700 border-slate-600 focus:outline-none"
               value={level}
               onChange={(e) => setLevel(e.target.value)}
             >
@@ -143,10 +143,10 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2 items-center">
             <Clock size={16} className="text-slate-400" />
             <select
-              className="bg-slate-700 border border-slate-600 rounded-md text-sm px-2 py-1 focus:outline-none"
+              className="px-2 py-1 text-sm rounded-md border bg-slate-700 border-slate-600 focus:outline-none"
               value={range}
               onChange={(e) => setRange(e.target.value)}
             >
@@ -165,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-4">
         <StatCard
           title="CPU Load"
           value={latestMetric?.cpu_load ? `${latestMetric.cpu_load.toFixed(2)}` : '--'}
@@ -192,15 +192,15 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700">
-          <h2 className="text-lg font-semibold mb-4 flex justify-between items-center">
-            <span className="flex items-center gap-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="p-6 rounded-lg border shadow-md lg:col-span-2 bg-slate-800 border-slate-700">
+          <h2 className="flex justify-between items-center mb-4 text-lg font-semibold">
+            <span className="flex gap-2 items-center">
               <Activity size={20} className="text-blue-400" /> Server Performance Metrics
             </span>
             <span className="text-xs text-slate-500">Auto-refreshing every 5s</span>
           </h2>
-          <div className="h-80 w-full">
+          <div className="w-full h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={metrics}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -223,11 +223,11 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         </div>
 
         <div className="bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700 flex flex-col h-[450px]">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
             <Terminal size={20} className="text-green-400" /> Live Stream
           </h2>
-          <div className="flex-1 overflow-y-auto bg-black p-4 rounded font-mono text-sm border border-slate-700">
-            {liveLogs.length === 0 && <p className="text-slate-500 italic">Waiting for live logs...</p>}
+          <div className="overflow-y-auto flex-1 p-4 font-mono text-sm bg-black rounded border border-slate-700">
+            {liveLogs.length === 0 && <p className="italic text-slate-500">Waiting for live logs...</p>}
             {liveLogs.map((log, idx) => (
               <div key={idx} className="mb-1">
                 <span className="text-slate-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span>{' '}
@@ -240,11 +240,11 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         </div>
 
         <div className="lg:col-span-2 bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700 h-[500px] flex flex-col">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
             <Terminal size={20} className="text-blue-400" /> Log History (Filtered)
           </h2>
-          <div className="flex-1 overflow-y-auto rounded border border-slate-700">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-y-auto flex-1 rounded border border-slate-700">
+            <table className="w-full text-sm text-left">
               <thead className="sticky top-0 bg-slate-700 text-slate-300">
                 <tr>
                   <th className="p-2">Timestamp</th>
@@ -253,11 +253,11 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {logsLoading && <tr><td colSpan={3} className="p-4 text-center italic text-slate-500">Loading historical logs...</td></tr>}
-                {historicalLogs?.length === 0 && !logsLoading && <tr><td colSpan={3} className="p-4 text-center italic text-slate-500">No logs found for current filters.</td></tr>}
+                {logsLoading && <tr><td colSpan={3} className="p-4 italic text-center text-slate-500">Loading historical logs...</td></tr>}
+                {historicalLogs?.length === 0 && !logsLoading && <tr><td colSpan={3} className="p-4 italic text-center text-slate-500">No logs found for current filters.</td></tr>}
                 {historicalLogs?.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-700/50">
-                    <td className="p-2 text-slate-400 whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
+                    <td className="p-2 whitespace-nowrap text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
                     <td className="p-2 font-bold">
                       <span className={log.level === 'ERROR' || log.level === 'REDIS_ERROR' ? 'text-red-400' : 'text-green-400'}>{log.level}</span>
                     </td>
@@ -270,15 +270,15 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         </div>
 
         <div className="bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700 h-[500px] flex flex-col">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
             <ShieldAlert size={20} className="text-red-400" /> Alert History
           </h2>
-          <div className="flex-1 overflow-y-auto">
-             {alertsLoading && <p className="italic text-slate-500 text-sm">Loading alerts...</p>}
-             {alerts?.length === 0 && !alertsLoading && <p className="italic text-slate-500 text-sm">No alerts recorded.</p>}
+          <div className="overflow-y-auto flex-1">
+             {alertsLoading && <p className="text-sm italic text-slate-500">Loading alerts...</p>}
+             {alerts?.length === 0 && !alertsLoading && <p className="text-sm italic text-slate-500">No alerts recorded.</p>}
              <div className="space-y-3">
                {alerts?.map((alert) => (
-                 <div key={alert.id} className="p-3 bg-slate-900 border-l-4 border-red-500 rounded text-sm">
+                 <div key={alert.id} className="p-3 text-sm rounded border-l-4 border-red-500 bg-slate-900">
                    <div className="flex justify-between items-start mb-1">
                      <span className="font-bold text-red-400">{alert.type}</span>
                      <span className="text-xs text-slate-500">{new Date(alert.created_at).toLocaleString()}</span>
@@ -295,12 +295,12 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 }
 
 const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode; subValue: string }> = ({ title, value, icon, subValue }) => (
-  <div className="bg-slate-800 p-5 rounded-lg shadow-md border border-slate-700">
+  <div className="p-5 rounded-lg border shadow-md bg-slate-800 border-slate-700">
     <div className="flex justify-between items-start mb-2">
-      <span className="text-slate-400 text-sm font-medium">{title}</span>
-      <div className="p-2 bg-slate-700 rounded-lg">{icon}</div>
+      <span className="text-sm font-medium text-slate-400">{title}</span>
+      <div className="p-2 rounded-lg bg-slate-700">{icon}</div>
     </div>
-    <div className="text-2xl font-bold mb-1">{value}</div>
+    <div className="mb-1 text-2xl font-bold">{value}</div>
     <div className="text-xs text-slate-500">{subValue}</div>
   </div>
 )
