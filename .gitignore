@@ -8,3 +8,5 @@ terraform.tfvars
 .terraform.lock.hcl
 
 *zip
+
+repomix-output.xml
