@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Login from '@/components/Login'
-import Dashboard from '@/components/Dashboard'
+import Login from '@/src/components/Login'
+import Dashboard from '@/src/components/Dashboard'
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(
