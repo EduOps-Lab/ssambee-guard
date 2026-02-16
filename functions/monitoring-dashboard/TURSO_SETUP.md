@@ -17,6 +17,18 @@ CREATE TABLE users (
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     role TEXT DEFAULT 'admin',
+    is_approved INTEGER DEFAULT 0, -- 0: 승인 대기, 1: 승인됨
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 로그인/회원가입 시도 테이블 (Rate Limiting)
+```sql
+CREATE TABLE login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    ip TEXT NOT NULL,
+    attempt_type TEXT NOT NULL, -- 'login' or 'register'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -37,10 +49,32 @@ CREATE TABLE biometrics (
 ```sql
 CREATE TABLE logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    level TEXT NOT NULL, -- INFO, ERROR, WARN
+    level TEXT NOT NULL, -- INFO, ERROR, WARN, REDIS_ERROR 등
     message TEXT NOT NULL,
     metadata TEXT, -- JSON format for additional info
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 서버 지표 테이블
+```sql
+CREATE TABLE server_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cpu_load REAL,
+    memory_usage REAL,
+    uptime INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 알람 이력 테이블
+```sql
+CREATE TABLE alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL, -- MEMORY_HIGH, REDIS_ERROR 등
+    message TEXT NOT NULL,
+    metadata TEXT, -- JSON format
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 

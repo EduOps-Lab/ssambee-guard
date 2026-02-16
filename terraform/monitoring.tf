@@ -16,7 +16,7 @@ resource "aws_lambda_function" "monitoring_dashboard" {
 
   environment {
     variables = {
-      TURSO_URL              = var.turso_url
+      TURSO_DATABASE_URL     = var.turso_url
       TURSO_AUTH_TOKEN       = var.turso_auth_token
       JWT_SECRET             = var.jwt_secret
       INTERNAL_INGEST_SECRET = var.internal_ingest_secret
