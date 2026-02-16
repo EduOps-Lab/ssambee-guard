@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react'
 import axios from 'axios'
 
@@ -16,7 +18,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true)
     setError('')
     try {
-      const apiUrl = import.meta.env.NEXT_PUBLIC_API_URL || ''
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
       const response = await axios.post(`${apiUrl}/login`, { username, password })
       onLogin(response.data.token)
     } catch (err: any) {
