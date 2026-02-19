@@ -19,8 +19,15 @@ export default function Register() {
     setError('')
     setMessage('')
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
-      const response = await axios.post(`${apiUrl}/register`, { username, password })
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+
+      const targetUrl = `${apiUrl}/register`
+      console.log('Registering to:', `${apiUrl}/register`);
+
+      const response = await axios.post(targetUrl, { username, password }, {
+        withCredentials: true
+      })
+
       setMessage(response.data.message)
       setTimeout(() => router.push('/'), 3000)
     } catch (err: any) {
@@ -39,7 +46,7 @@ export default function Register() {
             <label className="block mb-1 text-sm font-medium">Username</label>
             <input
               type="text"
-              className="p-2 w-full rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500 text-white"
+              className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -49,7 +56,7 @@ export default function Register() {
             <label className="block mb-1 text-sm font-medium">Password</label>
             <input
               type="password"
-              className="p-2 w-full rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500 text-white"
+              className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
