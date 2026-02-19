@@ -31,12 +31,12 @@ resource "aws_lambda_function_url" "monitoring_url" {
   invoke_mode        = "RESPONSE_STREAM"
 
   cors {
+    allow_credentials = true
     allow_origins     = ["*"] # Adjust to your Vercel URL in production
     allow_methods     = ["*"]
-    allow_headers     = ["content-type", "authorization"]
-    expose_headers    = ["x-amzn-header", "x-amz-cf-id"]
+    allow_headers     = ["content-type", "authorization", "x-internal-secret"]
+    expose_headers    = ["*"]
     max_age           = 3600
-    allow_credentials = true
   }
 }
 
