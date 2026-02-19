@@ -38,7 +38,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [level, setLevel] = useQueryState('level', parseAsString.withDefault(''))
-  const [alertType, setAlertType] = useQueryState('type', parseAsString.withDefault(''))
+  const [alertType, _setAlertType] = useQueryState('type', parseAsString.withDefault(''))
   const [range, setRange] = useQueryState('range', parseAsString.withDefault('1h'))
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''))
 
