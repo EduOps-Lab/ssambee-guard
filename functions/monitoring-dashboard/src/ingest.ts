@@ -48,31 +48,32 @@ export async function ingest(
 
     /** 생체 데이터 저장 */
     if (biometrics && biometrics.length > 0) {
-      for (const bio of biometrics) {
-        await db.execute({
-          sql: "INSERT INTO biometrics (device_id, heart_rate, systolic_bp, diastolic_bp) VALUES (?, ?, ?, ?)",
-          args: [
-            bio.device_id,
-            bio.heart_rate ?? null,
-            bio.systolic_bp ?? null,
-            bio.diastolic_bp ?? null,
-          ],
-        });
-      }
+      const placeholders = biometrics.map(() => "(?, ?, ?, ?)").join(", ");
+      const values = biometrics.flatMap((bio) => [
+        bio.device_id,
+        bio.heart_rate ?? null,
+        bio.systolic_bp ?? null,
+        bio.diastolic_bp ?? null,
+      ]);
+
+      await db.execute({
+        sql: `INSERT INTO biometrics (device_id, heart_rate, systolic_bp, diastolic_bp) VALUES ${placeholders}`,
+        args: values,
+      });
     }
 
     /** 로그 데이터 저장 */
     if (logs && logs.length > 0) {
-      for (const log of logs) {
-        await db.execute({
-          sql: "INSERT INTO logs (level, message, metadata) VALUES (?, ?, ?)",
-          args: [
-            log.level,
-            log.message,
-            log.metadata ? JSON.stringify(log.metadata) : "{}",
-          ],
-        });
-      }
+      const placeholders = logs.map(() => "(?, ?, ?)").join(", ");
+      const values = logs.flatMap((log) => [
+        log.level,
+        log.message,
+        log.metadata ? JSON.stringify(log.metadata) : "{}",
+      ]);
+      await db.execute({
+        sql: `INSERT INTO logs (level, message, metadata) VALUES ${placeholders}`,
+        args: values
+      });
     }
 
     return {
