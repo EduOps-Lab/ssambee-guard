@@ -58,6 +58,14 @@ resource "aws_lambda_function" "kakao_notifier" {
 resource "aws_apigatewayv2_api" "lambda_api" {
   name          = "ops-webhook-api"
   protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = ["http://localhost:3000"]
+    allow_methods = ["POST", "GET", "OPTIONS"]
+    allow_headers = ["content-type", "authorization", "x-internal-secret"]
+    allow_credentials = true
+    max_age = 3000
+  }
 }
 
 resource "aws_apigatewayv2_integration" "monitor_lambda" {
@@ -69,7 +77,7 @@ resource "aws_apigatewayv2_integration" "monitor_lambda" {
 # 어떤 주소(/webhook)로 요청을 받을지 결정
 resource "aws_apigatewayv2_route" "monitor_route" {
   api_id    = aws_apigatewayv2_api.lambda_api.id
-  route_key = "POST /webhook"
+  route_key = "ANY /{proxy+}" # 모든 메소드와 모든 경로를 람다로 전달
   target    = "integrations/${aws_apigatewayv2_integration.monitor_lambda.id}"
 }
 

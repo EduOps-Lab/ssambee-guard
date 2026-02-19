@@ -1,39 +1,57 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { Activity, Thermometer, ShieldAlert, LogOut, Terminal, Search, Filter, Clock } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import axios from 'axios'
-import { useQueryState, parseAsString } from 'nuqs'
+import React, { useState, useEffect, useRef } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import {
+  Activity,
+  Thermometer,
+  ShieldAlert,
+  LogOut,
+  Terminal,
+  Search,
+  Filter,
+  Clock,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { useQueryState, parseAsString } from "nuqs";
 
 interface ServerMetric {
-  id: number
-  cpu_load: number
-  memory_usage: number
-  uptime: number
-  created_at: string
+  id: number;
+  cpu_load: number;
+  memory_usage: number;
+  uptime: number;
+  created_at: string;
 }
 
 interface LogData {
-  id: number
-  level: string
-  message: string
-  metadata: string
-  timestamp: string
+  id: number;
+  level: string;
+  message: string;
+  metadata: string;
+  timestamp: string;
 }
 
 interface AlertData {
-  id: number
-  type: string
-  message: string
-  metadata: string
-  created_at: string
+  id: number;
+  type: string;
+  message: string;
+  metadata: string;
+  created_at: string;
 }
 
 interface DashboardProps {
-  token: string
-  onLogout: () => void
+  token: string;
+  onLogout: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
@@ -42,71 +60,71 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [range, setRange] = useQueryState('range', parseAsString.withDefault('1h'))
   const [search, setSearch] = useQueryState('search', parseAsString.withDefault(''))
 
-  const [liveLogs, setLiveLogs] = useState<LogData[]>([])
-  const logEndRef = useRef<HTMLDivElement>(null)
+  const [liveLogs, setLiveLogs] = useState<LogData[]>([]);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, '');
 
   const { data: historicalLogs, isLoading: logsLoading } = useQuery<LogData[]>({
-    queryKey: ['logs', level, search, range],
+    queryKey: ["logs", level, search, range],
     queryFn: async () => {
       const res = await axios.get(`${apiUrl}/logs`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { level, search, range }
-      })
-      return res.data
+        params: { level, search, range },
+      });
+      return res.data;
     },
-    refetchInterval: 30000
-  })
+    refetchInterval: 30000,
+  });
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<AlertData[]>({
-    queryKey: ['alerts', alertType, range],
+    queryKey: ["alerts", alertType, range],
     queryFn: async () => {
       const res = await axios.get(`${apiUrl}/alerts`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { type: alertType, range }
-      })
-      return res.data
-    }
-  })
+        params: { type: alertType, range },
+      });
+      return res.data;
+    },
+  });
 
   const { data: metrics } = useQuery<ServerMetric[]>({
-    queryKey: ['metrics', range],
+    queryKey: ["metrics", range],
     queryFn: async () => {
       const res = await axios.get(`${apiUrl}/metrics`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { range }
-      })
-      return res.data
+        params: { range },
+      });
+      return res.data;
     },
-    refetchInterval: 5000
-  })
+    refetchInterval: 5000,
+  });
 
   useEffect(() => {
-    const sseUrl = `${apiUrl}/stream?token=${token}`
-    const eventSource = new EventSource(sseUrl)
+    const sseUrl = `${apiUrl}/stream?token=${token}`;
+    const eventSource = new EventSource(sseUrl, { withCredentials: true });
 
     eventSource.onmessage = (event) => {
-      const payload = JSON.parse(event.data)
-      if (payload.type === 'log') {
-        setLiveLogs(prev => [...prev.slice(-50), payload.data])
+      const payload = JSON.parse(event.data);
+      if (payload.type === "log") {
+        setLiveLogs((prev) => [...prev.slice(-50), payload.data]);
       }
-    }
+    };
 
     eventSource.onerror = (err) => {
-      console.error('SSE Error:', err)
-      eventSource.close()
-    }
+      console.error("SSE Error:", err);
+      eventSource.close();
+    };
 
-    return () => eventSource.close()
-  }, [token, apiUrl])
+    return () => eventSource.close();
+  }, [token, apiUrl]);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [liveLogs])
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [liveLogs]);
 
-  const alertCount = alerts?.length || 0
-  const latestMetric = metrics?.[metrics.length - 1]
+  const alertCount = alerts?.length || 0;
+  const latestMetric = metrics?.[metrics.length - 1];
 
   return (
     <div className="p-6 min-h-screen bg-slate-900 text-slate-100">
@@ -118,7 +136,10 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
               type="text"
               placeholder="Search logs..."
@@ -168,13 +189,19 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
       <div className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-4">
         <StatCard
           title="CPU Load"
-          value={latestMetric?.cpu_load ? `${latestMetric.cpu_load.toFixed(2)}` : '--'}
+          value={
+            latestMetric?.cpu_load
+              ? `${latestMetric.cpu_load.toFixed(2)}`
+              : "--"
+          }
           icon={<Activity className="text-blue-400" />}
           subValue="System load"
         />
         <StatCard
           title="Memory Usage"
-          value={latestMetric?.memory_usage ? `${latestMetric.memory_usage}%` : '--'}
+          value={
+            latestMetric?.memory_usage ? `${latestMetric.memory_usage}%` : "--"
+          }
           icon={<Thermometer className="text-orange-400" />}
           subValue="RAM utilization"
         />
@@ -196,9 +223,12 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         <div className="p-6 rounded-lg border shadow-md lg:col-span-2 bg-slate-800 border-slate-700">
           <h2 className="flex justify-between items-center mb-4 text-lg font-semibold">
             <span className="flex gap-2 items-center">
-              <Activity size={20} className="text-blue-400" /> Server Performance Metrics
+              <Activity size={20} className="text-blue-400" /> Server
+              Performance Metrics
             </span>
-            <span className="text-xs text-slate-500">Auto-refreshing every 5s</span>
+            <span className="text-xs text-slate-500">
+              Auto-refreshing every 5s
+            </span>
           </h2>
           <div className="w-full h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -207,16 +237,41 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                 <XAxis
                   dataKey="created_at"
                   stroke="#94a3b8"
-                  tickFormatter={(t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  tickFormatter={(t) =>
+                    new Date(t).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  }
                 />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }}
-                  labelStyle={{ color: '#94a3b8' }}
+                  contentStyle={{
+                    backgroundColor: "#1e293b",
+                    border: "none",
+                    borderRadius: "8px",
+                  }}
+                  labelStyle={{ color: "#94a3b8" }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="memory_usage" name="Memory Usage %" stroke="#fbbf24" strokeWidth={2} dot={false} isAnimationActive={true} />
-                <Line type="monotone" dataKey="cpu_load" name="CPU Load" stroke="#f87171" strokeWidth={2} dot={false} isAnimationActive={true} />
+                <Line
+                  type="monotone"
+                  dataKey="memory_usage"
+                  name="Memory Usage %"
+                  stroke="#fbbf24"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={true}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="cpu_load"
+                  name="CPU Load"
+                  stroke="#f87171"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={true}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -227,12 +282,24 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
             <Terminal size={20} className="text-green-400" /> Live Stream
           </h2>
           <div className="overflow-y-auto flex-1 p-4 font-mono text-sm bg-black rounded border border-slate-700">
-            {liveLogs.length === 0 && <p className="italic text-slate-500">Waiting for live logs...</p>}
+            {liveLogs.length === 0 && (
+              <p className="italic text-slate-500">Waiting for live logs...</p>
+            )}
             {liveLogs.map((log, idx) => (
               <div key={idx} className="mb-1">
-                <span className="text-slate-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span>{' '}
-                <span className={log.level === 'ERROR' || log.level === 'REDIS_ERROR' ? 'text-red-400' : 'text-green-400'}>{log.level}</span>:{' '}
-                <span className="text-slate-300">{log.message}</span>
+                <span className="text-slate-500">
+                  [{new Date(log.timestamp).toLocaleTimeString()}]
+                </span>{" "}
+                <span
+                  className={
+                    log.level === "ERROR" || log.level === "REDIS_ERROR"
+                      ? "text-red-400"
+                      : "text-green-400"
+                  }
+                >
+                  {log.level}
+                </span>
+                : <span className="text-slate-300">{log.message}</span>
               </div>
             ))}
             <div ref={logEndRef} />
@@ -241,7 +308,8 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
         <div className="lg:col-span-2 bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700 h-[500px] flex flex-col">
           <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
-            <Terminal size={20} className="text-blue-400" /> Log History (Filtered)
+            <Terminal size={20} className="text-blue-400" /> Log History
+            (Filtered)
           </h2>
           <div className="overflow-y-auto flex-1 rounded border border-slate-700">
             <table className="w-full text-sm text-left">
@@ -253,13 +321,41 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {logsLoading && <tr><td colSpan={3} className="p-4 italic text-center text-slate-500">Loading historical logs...</td></tr>}
-                {historicalLogs?.length === 0 && !logsLoading && <tr><td colSpan={3} className="p-4 italic text-center text-slate-500">No logs found for current filters.</td></tr>}
+                {logsLoading && (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="p-4 italic text-center text-slate-500"
+                    >
+                      Loading historical logs...
+                    </td>
+                  </tr>
+                )}
+                {historicalLogs?.length === 0 && !logsLoading && (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="p-4 italic text-center text-slate-500"
+                    >
+                      No logs found for current filters.
+                    </td>
+                  </tr>
+                )}
                 {historicalLogs?.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-700/50">
-                    <td className="p-2 whitespace-nowrap text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
+                    <td className="p-2 whitespace-nowrap text-slate-400">
+                      {new Date(log.timestamp).toLocaleString()}
+                    </td>
                     <td className="p-2 font-bold">
-                      <span className={log.level === 'ERROR' || log.level === 'REDIS_ERROR' ? 'text-red-400' : 'text-green-400'}>{log.level}</span>
+                      <span
+                        className={
+                          log.level === "ERROR" || log.level === "REDIS_ERROR"
+                            ? "text-red-400"
+                            : "text-green-400"
+                        }
+                      >
+                        {log.level}
+                      </span>
                     </td>
                     <td className="p-2 text-slate-300">{log.message}</td>
                   </tr>
@@ -274,27 +370,43 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
             <ShieldAlert size={20} className="text-red-400" /> Alert History
           </h2>
           <div className="overflow-y-auto flex-1">
-             {alertsLoading && <p className="text-sm italic text-slate-500">Loading alerts...</p>}
-             {alerts?.length === 0 && !alertsLoading && <p className="text-sm italic text-slate-500">No alerts recorded.</p>}
-             <div className="space-y-3">
-               {alerts?.map((alert) => (
-                 <div key={alert.id} className="p-3 text-sm rounded border-l-4 border-red-500 bg-slate-900">
-                   <div className="flex justify-between items-start mb-1">
-                     <span className="font-bold text-red-400">{alert.type}</span>
-                     <span className="text-xs text-slate-500">{new Date(alert.created_at).toLocaleString()}</span>
-                   </div>
-                   <p className="text-slate-300">{alert.message}</p>
-                 </div>
-               ))}
-             </div>
+            {alertsLoading && (
+              <p className="text-sm italic text-slate-500">Loading alerts...</p>
+            )}
+            {alerts?.length === 0 && !alertsLoading && (
+              <p className="text-sm italic text-slate-500">
+                No alerts recorded.
+              </p>
+            )}
+            <div className="space-y-3">
+              {alerts?.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="p-3 text-sm rounded border-l-4 border-red-500 bg-slate-900"
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="font-bold text-red-400">{alert.type}</span>
+                    <span className="text-xs text-slate-500">
+                      {new Date(alert.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-slate-300">{alert.message}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode; subValue: string }> = ({ title, value, icon, subValue }) => (
+const StatCard: React.FC<{
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  subValue: string;
+}> = ({ title, value, icon, subValue }) => (
   <div className="p-5 rounded-lg border shadow-md bg-slate-800 border-slate-700">
     <div className="flex justify-between items-start mb-2">
       <span className="text-sm font-medium text-slate-400">{title}</span>
@@ -303,6 +415,6 @@ const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode; 
     <div className="mb-1 text-2xl font-bold">{value}</div>
     <div className="text-xs text-slate-500">{subValue}</div>
   </div>
-)
+);
 
-export default Dashboard
+export default Dashboard;
