@@ -1,98 +1,211 @@
-import jwt from 'jsonwebtoken'
-import bcrypt from 'bcryptjs'
-import { db } from './db'
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { db } from "./db";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret'
-const MAX_ATTEMPTS = 3
-const COOLDOWN_HOURS = 6
+/** 환경설정 */
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret";
+const MAX_ATTEMPTS = 3;
+const COOLDOWN_HOURS = 2;
 
-async function checkRateLimit(username: string | null, ip: string, type: 'login' | 'register'): Promise<boolean> {
-  const sixHoursAgo = new Date(Date.now() - COOLDOWN_HOURS * 60 * 60 * 1000).toISOString()
-  let query = 'SELECT COUNT(*) as count FROM login_attempts WHERE ip = ? AND attempt_type = ? AND created_at > ?'
-  let args: any[] = [ip, type, sixHoursAgo]
-  if (type === 'login' && username) {
-    query = 'SELECT COUNT(*) as count FROM login_attempts WHERE (username = ? OR ip = ?) AND attempt_type = ? AND created_at > ?'
-    args = [username, ip, type, sixHoursAgo]
+type AttemptType = "login" | "register";
+
+type UserRow = {
+  id: number;
+  username: string;
+  password_hash: string;
+  role: string;
+  is_approved: number;
+};
+
+const commonHeaders = {
+  "Content-Type": "application/json",
+  // "Access-Control-Allow-Credentials": "true",
+  // "Access-Control-Allow-Origin": "http://localhost:3000", // 운영 시 도메인으로 제한 권장
+};
+
+async function checkRateLimit(
+  username: string | null,
+  ip: string,
+  type: AttemptType,
+): Promise<boolean> {
+  const cooldownMs = COOLDOWN_HOURS * 60 * 60 * 1000;
+  const startTime = new Date(Date.now() - cooldownMs).toISOString();
+  // 회원가입 시도 3번 넘으면 2시간 잠금 (ip + 도메인 차단)
+  let query =
+    "SELECT COUNT(*) as count FROM login_attempts WHERE ip = ? AND attempt_type = ? AND created_at > ?";
+  let args: (string | number)[] = [ip, type, startTime];
+
+  if (type === "login" && username) {
+    query =
+      "SELECT COUNT(*) as count FROM login_attempts WHERE (username = ? OR ip = ?) AND attempt_type = ? AND created_at > ?";
+    args = [username, ip, type, startTime];
   }
-  const result = await db.execute({ sql: query, args })
-  const count = Number(result.rows[0]?.count || 0)
-  return count < MAX_ATTEMPTS
+
+  const result = await db.execute({ sql: query, args });
+  const count = Number(result.rows[0]?.count || 0);
+  return count < MAX_ATTEMPTS;
 }
 
-async function recordAttempt(username: string | null, ip: string, type: 'login' | 'register') {
+async function recordAttempt(
+  username: string | null,
+  ip: string,
+  type: AttemptType,
+) {
   await db.execute({
-    sql: 'INSERT INTO login_attempts (username, ip, attempt_type) VALUES (?, ?, ?)',
-    args: [username, ip, type]
-  })
+    sql: "INSERT INTO login_attempts (username, ip, attempt_type) VALUES (?, ?, ?)",
+    args: [username || "unknown", ip, type],
+  });
 }
 
-export async function register(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+export async function register(
+  event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> {
   try {
-    const ip = event.requestContext?.identity?.sourceIp || 'unknown'
-    const body = JSON.parse(event.body || '{}')
-    const { username, password } = body
+    const ip = event.requestContext?.identity?.sourceIp || "unknown";
+    const { username, password } = JSON.parse(event.body || "{}");
+
     if (!username || !password) {
-      return { statusCode: 400, body: JSON.stringify({ message: 'Username and password are required' }) }
+      return {
+        statusCode: 400,
+        headers: commonHeaders,
+        body: JSON.stringify({ message: "아이디 혹은 비밀번호가 필요합니다." }),
+      };
     }
-    const canRegister = await checkRateLimit(null, ip, 'register')
+
+    const canRegister = await checkRateLimit(null, ip, "register");
     if (!canRegister) {
-      return { statusCode: 429, body: JSON.stringify({ message: `Too many registration attempts. Please try again after ${COOLDOWN_HOURS} hours.` }) }
+      return {
+        statusCode: 429,
+        headers: commonHeaders,
+        body: JSON.stringify({
+          message: `너무 많은 요청을 보냈습니다. 나중에 다시 시도하십시오.`,
+        }),
+      };
     }
-    const existingUser = await db.execute({ sql: 'SELECT id FROM users WHERE username = ?', args: [username] })
+    const existingUser = await db.execute({
+      sql: "SELECT id FROM users WHERE username = ?",
+      args: [username],
+    });
+
     if (existingUser.rows.length > 0) {
-      await recordAttempt(username, ip, 'register')
-      return { statusCode: 409, body: JSON.stringify({ message: 'Username already exists' }) }
+      await recordAttempt(username, ip, "register");
+      return {
+        statusCode: 409,
+        headers: commonHeaders,
+        body: JSON.stringify({ message: "해당 유저는 이미 존재합니다." }),
+      };
     }
-    const passwordHash = bcrypt.hashSync(password, 10)
-    await db.execute({ sql: 'INSERT INTO users (username, password_hash, is_approved) VALUES (?, ?, 0)', args: [username, passwordHash] })
-    return { statusCode: 201, body: JSON.stringify({ message: 'Registration successful. Please wait for administrator approval.' }) }
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await db.execute({
+      sql: "INSERT INTO users (username, password_hash, is_approved) VALUES (?, ?, 0)",
+      args: [username, passwordHash],
+    });
+
+    return {
+      statusCode: 201,
+      headers: commonHeaders,
+      body: JSON.stringify({
+        message: "가입 요청이 등록되었습니다. 관리자의 승인을 기다리십시오.",
+      }),
+    };
   } catch (error) {
-    console.error('Registration error:', error)
-    return { statusCode: 500, body: JSON.stringify({ message: 'Internal Server Error' }) }
+    console.error("회원가입 오류:", error);
+    return {
+      statusCode: 500,
+      headers: commonHeaders,
+      body: JSON.stringify({ message: "Internal Server Error" }),
+    };
   }
 }
 
-export async function login(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+export async function login(
+  event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> {
   try {
-    const ip = event.requestContext?.identity?.sourceIp || 'unknown'
-    const body = JSON.parse(event.body || '{}')
-    const { username, password } = body
+    const ip = event.requestContext?.identity?.sourceIp || "unknown";
+    const { username, password } = JSON.parse(event.body || "{}");
+
     if (!username || !password) {
-      return { statusCode: 400, body: JSON.stringify({ message: 'Username and password are required' }) }
+      return {
+        statusCode: 400,
+        headers: commonHeaders,
+        body: JSON.stringify({ message: "아이디 혹은 비밀번호가 필요합니다." }),
+      };
     }
-    const canLogin = await checkRateLimit(username, ip, 'login')
+
+    const canLogin = await checkRateLimit(username, ip, "login");
     if (!canLogin) {
-      return { statusCode: 429, body: JSON.stringify({ message: `Too many login attempts. Please try again after ${COOLDOWN_HOURS} hours.` }) }
+      return {
+        statusCode: 429,
+        headers: commonHeaders,
+        body: JSON.stringify({
+          message: `너무 많은 요청을 보냈습니다. 나중에 다시시도하십시오.`,
+        }),
+      };
     }
-    const result = await db.execute({ sql: 'SELECT * FROM users WHERE username = ?', args: [username] })
-    const user = result.rows[0]
-    if (!user || !bcrypt.compareSync(password, user.password_hash as string)) {
-      await recordAttempt(username, ip, 'login')
-      return { statusCode: 401, body: JSON.stringify({ message: 'Invalid credentials' }) }
+
+    const result = await db.execute({
+      sql: "SELECT * FROM users WHERE username = ?",
+      args: [username],
+    });
+
+    const user = result.rows[0] as unknown as UserRow | undefined;
+
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      await recordAttempt(username, ip, "login");
+      return {
+        statusCode: 401,
+        headers: commonHeaders,
+        body: JSON.stringify({ message: "올바르지 않은 인증" }),
+      };
     }
     if (Number(user.is_approved) !== 1) {
-      return { statusCode: 403, body: JSON.stringify({ message: 'Your account is pending administrator approval.' }) }
+      return {
+        statusCode: 403,
+        headers: commonHeaders,
+        body: JSON.stringify({
+          message:
+            "해당 계정은 관리자의 승인이 필요합니다. 잠시만 기다려주세요",
+        }),
+      };
     }
-    const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' })
+    const token = jwt.sign(
+      { userId: user.id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "24h" },
+    );
+
     return {
       statusCode: 200,
       headers: {
-        'Set-Cookie': `token=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=86400; Path=/`,
-        'Access-Control-Allow-Credentials': 'true',
-        'Access-Control-Allow-Origin': '*',
+        ...commonHeaders,
+        "Set-Cookie": `token=${token}; HttpOnly; Secure; SameSite=None; Max-Age=86400; Path=/`,
       },
-      body: JSON.stringify({ message: 'Login successful', token }),
-    }
+      body: JSON.stringify({ message: "로그인을 성공하였습니다.", token }),
+    };
   } catch (error) {
-    console.error('Login error:', error)
-    return { statusCode: 500, body: JSON.stringify({ message: 'Internal Server Error' }) }
+    console.error("로그인 오류", error);
+    return {
+      statusCode: 500,
+      headers: commonHeaders,
+      body: JSON.stringify({ message: "Internal Server Error" }),
+    };
   }
 }
 
 export function verifyToken(event: APIGatewayProxyEvent) {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization']
-  const token = authHeader?.split(' ')[1] || (event.headers['cookie']?.split('token=')[1]?.split(';')[0])
-  if (!token) return null
-  try { return jwt.verify(token, JWT_SECRET) } catch (err) { return null }
+  const authHeader =
+    event.headers["authorization"] || event.headers["Authorization"];
+  const token =
+    authHeader?.split(" ")[1] ||
+    event.headers["cookie"]?.split("token=")[1]?.split(";")[0];
+
+  if (!token) return null;
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return null;
+  }
 }

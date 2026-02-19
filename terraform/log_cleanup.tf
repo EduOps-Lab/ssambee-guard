@@ -16,7 +16,7 @@ resource "aws_lambda_function" "log_cleanup" {
 
   environment {
     variables = {
-      TURSO_DATABASE_URL = var.turso_url
+      TURSO_DATABASE_URL = var.turso_database_url
       TURSO_AUTH_TOKEN    = var.turso_auth_token
     }
   }
