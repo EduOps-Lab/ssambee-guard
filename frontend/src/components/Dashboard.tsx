@@ -54,7 +54,7 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
+export default function Dashboard({ token, onLogout }: DashboardProps) {
   const [level, setLevel] = useQueryState('level', parseAsString.withDefault(''))
   const [alertType, _setAlertType] = useQueryState('type', parseAsString.withDefault(''))
   const [range, setRange] = useQueryState('range', parseAsString.withDefault('1h'))
@@ -131,7 +131,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
       <header className="flex flex-col gap-4 justify-between items-center p-4 mb-8 rounded-lg border shadow-md md:flex-row bg-slate-800 border-slate-700">
         <div className="flex gap-3 items-center">
           <Activity className="w-8 h-8 text-blue-400" />
-          <h1 className="text-xl font-bold">Monitoring Central Control</h1>
+          <h1 className="text-xl font-bold">모니터링 중앙 제어</h1>
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
@@ -142,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
             />
             <input
               type="text"
-              placeholder="Search logs..."
+              placeholder="로그 검색..."
               className="py-1 pr-3 pl-9 text-sm rounded-md border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -156,11 +156,11 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
               value={level}
               onChange={(e) => setLevel(e.target.value)}
             >
-              <option value="">All Levels</option>
-              <option value="INFO">INFO</option>
-              <option value="WARN">WARN</option>
-              <option value="ERROR">ERROR</option>
-              <option value="REDIS_ERROR">REDIS_ERROR</option>
+              <option value="">모든 레벨</option>
+              <option value="INFO">정보 (INFO)</option>
+              <option value="WARN">경고 (WARN)</option>
+              <option value="ERROR">에러 (ERROR)</option>
+              <option value="REDIS_ERROR">레디스 에러 (REDIS_ERROR)</option>
             </select>
           </div>
 
@@ -171,9 +171,9 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
               value={range}
               onChange={(e) => setRange(e.target.value)}
             >
-              <option value="1h">Last 1 Hour</option>
-              <option value="24h">Last 24 Hours</option>
-              <option value="7d">Last 7 Days</option>
+              <option value="1h">최근 1시간</option>
+              <option value="24h">최근 24시간</option>
+              <option value="7d">최근 7일</option>
             </select>
           </div>
 
@@ -181,41 +181,41 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
             onClick={onLogout}
             className="flex items-center gap-2 px-4 py-1.5 bg-red-600 hover:bg-red-700 rounded text-sm transition font-medium"
           >
-            <LogOut size={16} /> Logout
+            <LogOut size={16} /> 로그아웃
           </button>
         </div>
       </header>
 
       <div className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-4">
         <StatCard
-          title="CPU Load"
+          title="CPU 부하"
           value={
             latestMetric?.cpu_load
               ? `${latestMetric.cpu_load.toFixed(2)}`
               : "--"
           }
           icon={<Activity className="text-blue-400" />}
-          subValue="System load"
+          subValue="시스템 부하"
         />
         <StatCard
-          title="Memory Usage"
+          title="메모리 사용량"
           value={
             latestMetric?.memory_usage ? `${latestMetric.memory_usage}%` : "--"
           }
           icon={<Thermometer className="text-orange-400" />}
-          subValue="RAM utilization"
+          subValue="RAM 사용율"
         />
         <StatCard
-          title="Alert Count"
+          title="알림 횟수"
           value={alertCount.toString()}
           icon={<ShieldAlert className="text-red-500" />}
-          subValue="Actual notifications sent"
+          subValue="실제 발송된 알림"
         />
         <StatCard
-          title="Live Status"
-          value={liveLogs.length > 0 ? "Active" : "Idle"}
+          title="실시간 상태"
+          value={liveLogs.length > 0 ? "활성" : "대기"}
           icon={<Terminal className="text-green-400" />}
-          subValue="Real-time stream"
+          subValue="실시간 스트림"
         />
       </div>
 
@@ -223,11 +223,10 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         <div className="p-6 rounded-lg border shadow-md lg:col-span-2 bg-slate-800 border-slate-700">
           <h2 className="flex justify-between items-center mb-4 text-lg font-semibold">
             <span className="flex gap-2 items-center">
-              <Activity size={20} className="text-blue-400" /> Server
-              Performance Metrics
+              <Activity size={20} className="text-blue-400" /> 서버 성능 지표
             </span>
             <span className="text-xs text-slate-500">
-              Auto-refreshing every 5s
+              5초마다 자동 갱신
             </span>
           </h2>
           <div className="w-full h-80">
@@ -257,7 +256,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                 <Line
                   type="monotone"
                   dataKey="memory_usage"
-                  name="Memory Usage %"
+                  name="메모리 사용량 %"
                   stroke="#fbbf24"
                   strokeWidth={2}
                   dot={false}
@@ -266,7 +265,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                 <Line
                   type="monotone"
                   dataKey="cpu_load"
-                  name="CPU Load"
+                  name="CPU 부하"
                   stroke="#f87171"
                   strokeWidth={2}
                   dot={false}
@@ -279,11 +278,11 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
         <div className="bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700 flex flex-col h-[450px]">
           <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
-            <Terminal size={20} className="text-green-400" /> Live Stream
+            <Terminal size={20} className="text-green-400" /> 실시간 스트림
           </h2>
           <div className="overflow-y-auto flex-1 p-4 font-mono text-sm bg-black rounded border border-slate-700">
             {liveLogs.length === 0 && (
-              <p className="italic text-slate-500">Waiting for live logs...</p>
+              <p className="italic text-slate-500">실시간 로그 대기 중...</p>
             )}
             {liveLogs.map((log, idx) => (
               <div key={idx} className="mb-1">
@@ -308,16 +307,15 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
         <div className="lg:col-span-2 bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700 h-[500px] flex flex-col">
           <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
-            <Terminal size={20} className="text-blue-400" /> Log History
-            (Filtered)
+            <Terminal size={20} className="text-blue-400" /> 로그 기록 (필터링됨)
           </h2>
           <div className="overflow-y-auto flex-1 rounded border border-slate-700">
             <table className="w-full text-sm text-left">
               <thead className="sticky top-0 bg-slate-700 text-slate-300">
                 <tr>
-                  <th className="p-2">Timestamp</th>
-                  <th className="p-2">Level</th>
-                  <th className="p-2">Message</th>
+                  <th className="p-2">타임스탬프</th>
+                  <th className="p-2">레벨</th>
+                  <th className="p-2">메시지</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
@@ -327,7 +325,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                       colSpan={3}
                       className="p-4 italic text-center text-slate-500"
                     >
-                      Loading historical logs...
+                      로그 기록 로드 중...
                     </td>
                   </tr>
                 )}
@@ -337,7 +335,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                       colSpan={3}
                       className="p-4 italic text-center text-slate-500"
                     >
-                      No logs found for current filters.
+                      현재 필터에 해당하는 로그가 없습니다.
                     </td>
                   </tr>
                 )}
@@ -367,15 +365,15 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
         <div className="bg-slate-800 p-6 rounded-lg shadow-md border border-slate-700 h-[500px] flex flex-col">
           <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
-            <ShieldAlert size={20} className="text-red-400" /> Alert History
+            <ShieldAlert size={20} className="text-red-400" /> 알림 내역
           </h2>
           <div className="overflow-y-auto flex-1">
             {alertsLoading && (
-              <p className="text-sm italic text-slate-500">Loading alerts...</p>
+              <p className="text-sm italic text-slate-500">알림 로드 중...</p>
             )}
             {alerts?.length === 0 && !alertsLoading && (
               <p className="text-sm italic text-slate-500">
-                No alerts recorded.
+                기록된 알림이 없습니다.
               </p>
             )}
             <div className="space-y-3">
@@ -401,12 +399,18 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   );
 };
 
-const StatCard: React.FC<{
+function StatCard({
+  title,
+  value,
+  icon,
+  subValue,
+}: {
   title: string;
   value: string;
   icon: React.ReactNode;
   subValue: string;
-}> = ({ title, value, icon, subValue }) => (
+}) {
+  return (
   <div className="p-5 rounded-lg border shadow-md bg-slate-800 border-slate-700">
     <div className="flex justify-between items-start mb-2">
       <span className="text-sm font-medium text-slate-400">{title}</span>
@@ -415,6 +419,5 @@ const StatCard: React.FC<{
     <div className="mb-1 text-2xl font-bold">{value}</div>
     <div className="text-xs text-slate-500">{subValue}</div>
   </div>
-);
-
-export default Dashboard;
+  );
+}

@@ -17,7 +17,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <NuqsAdapter>
-        <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-blue-400">Loading...</div>}>
+        <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-blue-400">로딩 중...</div>}>
           {children}
         </Suspense>
       </NuqsAdapter>

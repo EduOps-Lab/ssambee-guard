@@ -31,7 +31,7 @@ export default function Register() {
       setMessage(response.data.message)
       setTimeout(() => router.push('/'), 3000)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed')
+      setError(err.response?.data?.message || '회원가입에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -40,10 +40,10 @@ export default function Register() {
   return (
     <div className="flex justify-center items-center min-h-screen bg-slate-900 text-slate-100">
       <div className="p-8 w-96 rounded-lg border shadow-xl bg-slate-800 border-slate-700">
-        <h1 className="mb-6 text-2xl font-bold text-center text-blue-400">Register</h1>
+        <h1 className="mb-6 text-2xl font-bold text-center text-blue-400">회원가입</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block mb-1 text-sm font-medium">Username</label>
+            <label className="block mb-1 text-sm font-medium">사용자 이름</label>
             <input
               type="text"
               className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
@@ -53,7 +53,7 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium">Password</label>
+            <label className="block mb-1 text-sm font-medium">비밀번호</label>
             <input
               type="password"
               className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
@@ -69,14 +69,14 @@ export default function Register() {
             disabled={loading}
             className="py-2 w-full font-bold bg-blue-600 rounded transition duration-200 hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Registering...' : 'Register'}
+            {loading ? '가입 중...' : '회원가입'}
           </button>
         </form>
         <div className="mt-4 text-center">
           <p className="text-sm text-slate-400">
-            Already have an account?{' '}
+            이미 계정이 있으신가요?{' '}
             <Link href="/" className="text-blue-400 hover:underline">
-              Login here
+              여기에서 로그인하세요
             </Link>
           </p>
         </div>
