@@ -48,31 +48,66 @@ export async function getLogs(
   event: APIGatewayProxyEvent,
 ): Promise<APIGatewayProxyResult> {
   try {
-    const { level, search, range } = event.queryStringParameters || {};
+    const { level, search, range, page, limit, from, to } = event.queryStringParameters || {};
+
     let query = "SELECT * FROM logs WHERE 1=1";
+    let countQuery = "SELECT COUNT(*) as count FROM logs WHERE 1=1";
     const args: (string | number)[] = [];
 
     if (level) {
       query += " AND level = ?";
+      countQuery += " AND level = ?";
       args.push(level);
     }
     if (search) {
       query += " AND (message LIKE ? OR metadata LIKE ?)";
+      countQuery += " AND (message LIKE ? OR metadata LIKE ?)";
       args.push(`%${search}%`, `%${search}%`);
     }
 
-    query += "  AND timestamp >= ?";
-    args.push(getFromDateISO(range));
+    if (from) {
+      query += " AND timestamp >= ?";
+      countQuery += " AND timestamp >= ?";
+      args.push(from);
+    } else if (range) {
+      query += " AND timestamp >= ?";
+      countQuery += " AND timestamp >= ?";
+      args.push(getFromDateISO(range));
+    }
 
-    query += " ORDER BY timestamp DESC LIMIT 200";
+    if (to) {
+      query += " AND timestamp <= ?";
+      countQuery += " AND timestamp <= ?";
+      args.push(to);
+    }
 
-    const result = await db.execute({ sql: query, args });
+    const totalResult = await db.execute({ sql: countQuery, args });
+    const total = Number((totalResult.rows[0] as unknown as { count: number })?.count || 0);
+
+    query += " ORDER BY timestamp DESC";
+
+    const p = Math.max(1, parseInt(page || "1") || 1);
+    const l = Math.min(100, Math.max(1, parseInt(limit || "50") || 50));
+    const offset = (p - 1) * l;
+
+    query += " LIMIT ? OFFSET ?";
+    const queryArgs = [...args, l, offset];
+
+    const result = await db.execute({ sql: query, args: queryArgs });
     const rows = result.rows as unknown as LogRow[];
 
     return {
       statusCode: 200,
       headers: commonHeaders,
-      body: JSON.stringify(rows),
+      body: JSON.stringify({
+        data: rows,
+        pagination: {
+          page: p,
+          limit: l,
+          total,
+          totalPages: Math.ceil(total / l),
+        },
+      }),
     };
   } catch (error) {
     console.error("로그를 가져오는데 문제가있습니다:", error);

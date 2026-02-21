@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ssambee-guard-dashboard
+    ports:
+      -  "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules # host node_modules container 덮어쓰지 않게 보호
+      - /app/.next                  # 빌드 아키텍트 분리
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true # windows나 특정 환경에서 파일 감지가 안될 때 유용
+    # 컨테이너 실행 후 자동으로 husky가 설치되도록
+    stdin_open: true
+    tty: true
