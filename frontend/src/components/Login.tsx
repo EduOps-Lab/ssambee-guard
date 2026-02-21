@@ -37,31 +37,31 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-slate-900">
-      <div className="p-8 w-96 rounded-lg border shadow-xl bg-slate-800 border-slate-700">
-        <h1 className="mb-6 text-2xl font-bold text-center text-blue-400">
+    <div className="flex justify-center items-center min-h-screen bg-background text-foreground">
+      <div className="p-8 w-96 rounded-lg border shadow-xl bg-card border-border">
+        <h1 className="mb-6 text-2xl font-bold text-center text-blue-500">
           모니터링 제어 센터
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block mb-1 text-sm font-medium text-slate-300">
+            <label className="block mb-1 text-sm font-medium opacity-80">
               사용자 이름
             </label>
             <input
               type="text"
-              className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
+              className="p-2 w-full rounded border bg-background border-border focus:outline-none focus:border-blue-500 transition-colors"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium text-slate-300">
+            <label className="block mb-1 text-sm font-medium opacity-80">
               비밀번호
             </label>
             <input
               type="password"
-              className="p-2 w-full text-white rounded border bg-slate-700 border-slate-600 focus:outline-none focus:border-blue-500"
+              className="p-2 w-full rounded border bg-background border-border focus:outline-none focus:border-blue-500 transition-colors"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

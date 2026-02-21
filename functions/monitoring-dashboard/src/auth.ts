@@ -63,7 +63,8 @@ export async function register(
 ): Promise<APIGatewayProxyResult> {
   try {
     const ip = event.requestContext?.identity?.sourceIp || "unknown";
-    const { username, password } = JSON.parse(event.body || "{}");
+    const body = typeof event.body === "string" ? JSON.parse(event.body || "{}") : event.body;
+    const { username, password } = body;
 
     if (!username || !password) {
       return {
@@ -98,8 +99,9 @@ export async function register(
     }
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Default role is 'member', is_approved is 0
     await db.execute({
-      sql: "INSERT INTO users (username, password_hash, is_approved) VALUES (?, ?, 0)",
+      sql: "INSERT INTO users (username, password_hash, role, is_approved) VALUES (?, ?, 'member', 0)",
       args: [username, passwordHash],
     });
 
@@ -198,8 +200,10 @@ export async function login(
 export function verifyToken(event: APIGatewayProxyEvent) {
   const authHeader =
     event.headers["authorization"] || event.headers["Authorization"];
+
   const token =
     authHeader?.split(" ")[1] ||
+    event.queryStringParameters?.token ||
     event.headers["cookie"]?.split("token=")[1]?.split(";")[0];
 
   if (!token) return null;

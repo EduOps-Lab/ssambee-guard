@@ -1,25 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Login from '@/components/Login'
+import AuthenticatedLayout from '@/components/AuthenticatedLayout'
 import Dashboard from '@/components/Dashboard'
+import { useAuth } from '@/providers/AuthProvider'
 
 export default function Home() {
-  const [token, setToken] = useState<string | null>(
-    typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  const { token, logout } = useAuth()
+
+  return (
+    <AuthenticatedLayout>
+      {token && <Dashboard token={token} onLogout={logout} />}
+    </AuthenticatedLayout>
   )
-
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token)
-    } else {
-      localStorage.removeItem('token')
-    }
-  }, [token])
-
-  if (!token) {
-    return <Login onLogin={setToken} />
-  }
-
-  return <Dashboard token={token} onLogout={() => setToken(null)} />
 }
