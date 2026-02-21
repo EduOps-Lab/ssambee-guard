@@ -64,7 +64,9 @@ export async function handleUserAction(
     }
 
     if (method === "PATCH") {
-      const body = typeof event.body === "string" ? JSON.parse(event.body || "{}") : event.body;
+      const body = typeof event.body === "string" 
+        ? JSON.parse(event.body || "{}") 
+        : (event.body && typeof event.body === "object") ? event.body : {};
       const { role, is_approved } = body;
 
       const updates: string[] = [];

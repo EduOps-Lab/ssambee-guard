@@ -63,7 +63,9 @@ export async function register(
 ): Promise<APIGatewayProxyResult> {
   try {
     const ip = event.requestContext?.identity?.sourceIp || "unknown";
-    const body = typeof event.body === "string" ? JSON.parse(event.body || "{}") : event.body;
+    const body = typeof event.body === "string" 
+      ? JSON.parse(event.body || "{}") 
+      : (event.body && typeof event.body === "object") ? event.body : {};
     const { username, password } = body;
 
     if (!username || !password) {
