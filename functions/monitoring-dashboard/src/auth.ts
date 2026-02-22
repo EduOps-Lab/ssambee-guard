@@ -4,7 +4,10 @@ import { db } from "./db";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
 /** 환경설정 */
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret";
+const JWT_SECRET = (process.env.JWT_SECRET || "").trim() || (process.env.NODE_ENV === "production" ? "" : "super-secret");
+if (!JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("FATAL: JWT_SECRET environment variable is missing in production!");
+}
 const MAX_ATTEMPTS = 3;
 const COOLDOWN_HOURS = 2;
 
@@ -20,8 +23,6 @@ type UserRow = {
 
 const commonHeaders = {
   "Content-Type": "application/json",
-  // "Access-Control-Allow-Credentials": "true",
-  // "Access-Control-Allow-Origin": "http://localhost:3000", // 운영 시 도메인으로 제한 권장
 };
 
 async function checkRateLimit(
@@ -63,8 +64,8 @@ export async function register(
 ): Promise<APIGatewayProxyResult> {
   try {
     const ip = event.requestContext?.identity?.sourceIp || "unknown";
-    const body = typeof event.body === "string" 
-      ? JSON.parse(event.body || "{}") 
+    const body = typeof event.body === "string"
+      ? JSON.parse(event.body || "{}")
       : (event.body && typeof event.body === "object") ? event.body : {};
     const { username, password } = body;
 
@@ -199,19 +200,47 @@ export async function login(
   }
 }
 
-export function verifyToken(event: APIGatewayProxyEvent) {
-  const authHeader =
-    event.headers["authorization"] || event.headers["Authorization"];
+export function verifyToken(event: any) {
+  const headers = event.headers || {};
+  const authHeader = headers["authorization"] || headers["Authorization"];
 
-  const token =
-    authHeader?.split(" ")[1] ||
-    event.queryStringParameters?.token ||
-    event.headers["cookie"]?.split("token=")[1]?.split(";")[0];
+  let token = authHeader?.split(" ")[1] || event.queryStringParameters?.token;
 
-  if (!token) return null;
+  // Fallback for rawQueryString parsing if queryStringParameters is flaky
+  if (!token && event.rawQueryString) {
+    const params = new URLSearchParams(event.rawQueryString);
+    token = params.get("token");
+  }
+
+  if (!token && event.cookies) {
+    const cookieToken = event.cookies.find((c: string) => c.startsWith("token="))?.split("=")[1];
+    if (cookieToken) token = cookieToken;
+  }
+
+  if (!token && (headers["cookie"] || headers["Cookie"])) {
+    const cookie = headers["cookie"] || headers["Cookie"];
+    token = cookie.split("token=")[1]?.split(";")[0];
+  }
+
+  if (!token) {
+    console.warn(
+      "[Auth] No token found. Headers:",
+      JSON.stringify(headers),
+      "Query:",
+      JSON.stringify(event.queryStringParameters || {}),
+      "RawQuery:",
+      event.rawQueryString || "none",
+      "Path:",
+      event.rawPath || "none"
+    );
+    return null;
+  }
+
   try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (err) {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded;
+  } catch (err: any) {
+    console.error("[Auth] Token verification failed:", err.message);
     return null;
   }
 }
