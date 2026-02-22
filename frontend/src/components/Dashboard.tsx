@@ -25,6 +25,7 @@ import axios from "axios";
 import { useQueryState, parseAsString } from "nuqs";
 import { useTheme } from "@/providers/ThemeProvider";
 import Link from "next/link";
+import { API_URL } from "@/lib/config";
 
 interface ServerMetric {
   id: number;
@@ -60,12 +61,10 @@ export default function Dashboard({ token }: { token: string }) {
   const logEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, '');
-
   const { data: historicalLogsResponse, isLoading: logsLoading } = useQuery<{ data: LogData[] }>({
     queryKey: ["logs", level, search, range, 1],
     queryFn: async () => {
-      const res = await axios.get(`${apiUrl}/logs`, {
+      const res = await axios.get(`${API_URL}/logs`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { level, search, range, page: 1, limit: 10 },
       });
@@ -79,7 +78,7 @@ export default function Dashboard({ token }: { token: string }) {
   const { data: alerts, isLoading: alertsLoading } = useQuery<AlertData[]>({
     queryKey: ["alerts", alertType, range],
     queryFn: async () => {
-      const res = await axios.get(`${apiUrl}/alerts`, {
+      const res = await axios.get(`${API_URL}/alerts`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { type: alertType, range },
       });
@@ -90,7 +89,7 @@ export default function Dashboard({ token }: { token: string }) {
   const { data: metrics } = useQuery<ServerMetric[]>({
     queryKey: ["metrics", range],
     queryFn: async () => {
-      const res = await axios.get(`${apiUrl}/metrics`, {
+      const res = await axios.get(`${API_URL}/metrics`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { range },
       });
@@ -100,7 +99,7 @@ export default function Dashboard({ token }: { token: string }) {
   });
 
   useEffect(() => {
-    const sseUrl = `${apiUrl}/stream?token=${token}`;
+    const sseUrl = `${API_URL}/stream?token=${token}`;
     const eventSource = new EventSource(sseUrl);
 
     eventSource.onmessage = (event) => {
@@ -128,7 +127,7 @@ export default function Dashboard({ token }: { token: string }) {
     };
 
     return () => eventSource.close();
-  }, [token, apiUrl, queryClient, alertType, range]);
+  }, [token, API_URL, queryClient, alertType, range]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -231,12 +230,12 @@ export default function Dashboard({ token }: { token: string }) {
             <span className="flex gap-2 items-center">
               <Activity size={20} className="text-blue-500" /> 서버 성능 지표
             </span>
-            <span className="text-xs text-muted-foreground font-normal">
+            <span className="text-xs font-normal text-muted-foreground">
               실시간 스트리밍 중
             </span>
           </h2>
-          <div className="w-full h-80">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full h-80 min-h-[320px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={320}>
               <LineChart data={metrics}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
                 <XAxis
@@ -286,7 +285,7 @@ export default function Dashboard({ token }: { token: string }) {
           <h2 className="flex gap-2 items-center mb-4 text-lg font-semibold">
             <Terminal size={20} className="text-green-500" /> 실시간 스트림
           </h2>
-          <div className="overflow-y-auto flex-1 p-4 font-mono text-xs bg-slate-950 text-slate-300 rounded-md border border-border">
+          <div className="overflow-y-auto flex-1 p-4 font-mono text-xs rounded-md border bg-slate-950 text-slate-300 border-border">
             {liveLogs.length === 0 && (
               <p className="italic opacity-50">실시간 로그 대기 중...</p>
             )}
@@ -322,7 +321,7 @@ export default function Dashboard({ token }: { token: string }) {
           </div>
           <div className="overflow-y-auto flex-1 rounded-md border border-border">
             <table className="w-full text-sm text-left">
-              <thead className="sticky top-0 bg-muted text-muted-foreground font-medium">
+              <thead className="sticky top-0 font-medium bg-muted text-muted-foreground">
                 <tr>
                   <th className="p-3">타임스탬프</th>
                   <th className="p-3">레벨</th>
@@ -351,7 +350,7 @@ export default function Dashboard({ token }: { token: string }) {
                   </tr>
                 )}
                 {historicalLogs?.map((log) => (
-                  <tr key={log.id} className="hover:bg-muted/50 transition-colors">
+                  <tr key={log.id} className="transition-colors hover:bg-muted/50">
                     <td className="p-3 whitespace-nowrap opacity-60">
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
@@ -390,7 +389,7 @@ export default function Dashboard({ token }: { token: string }) {
             {alerts?.map((alert) => (
               <div
                 key={alert.id}
-                className="p-4 text-sm rounded-lg border-l-4 border-red-500 bg-muted/30 hover:bg-muted/50 transition-all"
+                className="p-4 text-sm rounded-lg border-l-4 border-red-500 transition-all bg-muted/30 hover:bg-muted/50"
               >
                 <div className="flex justify-between items-start mb-2">
                   <span className="font-bold text-red-500 uppercase">{alert.type}</span>
@@ -398,7 +397,7 @@ export default function Dashboard({ token }: { token: string }) {
                     {new Date(alert.created_at).toLocaleString()}
                   </span>
                 </div>
-                <p className="opacity-90 leading-relaxed">{alert.message}</p>
+                <p className="leading-relaxed opacity-90">{alert.message}</p>
               </div>
             ))}
           </div>
@@ -420,13 +419,13 @@ function StatCard({
   subValue: string;
 }) {
   return (
-  <div className="p-5 rounded-lg border shadow-sm bg-card hover:shadow-md transition-shadow">
-    <div className="flex justify-between items-start mb-3">
-      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
-      <div className="p-2 rounded-lg bg-muted text-blue-500">{icon}</div>
+    <div className="p-5 rounded-lg border shadow-sm transition-shadow bg-card hover:shadow-md">
+      <div className="flex justify-between items-start mb-3">
+        <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">{title}</span>
+        <div className="p-2 text-blue-500 rounded-lg bg-muted">{icon}</div>
+      </div>
+      <div className="mb-1 text-2xl font-bold">{value}</div>
+      <div className="text-xs text-muted-foreground">{subValue}</div>
     </div>
-    <div className="mb-1 text-2xl font-bold">{value}</div>
-    <div className="text-xs text-muted-foreground">{subValue}</div>
-  </div>
   );
 }
