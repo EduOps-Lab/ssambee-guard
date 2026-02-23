@@ -40,7 +40,11 @@ function getFromDateISO(range: string | undefined): string {
   if (range === "24h") ms = 24 * 60 * 60 * 1000;
   else if (range === "7d") ms = 7 * 24 * 60 * 60 * 1000;
 
-  return new Date(now.getTime() - ms).toISOString();
+  // SQLite/Turso는 CURRENT_TIMESTAMP를 "YYYY-MM-DD HH:MM:SS" (공백 구분자, UTC) 형식으로 저장합니다.
+  // ISO 포맷의 'T'와 문자열 비교 시 공백(' ', ASCII 32) < 'T'(ASCII 84)이므로
+  // 같은 날짜의 모든 레코드가 제외되는 버그가 발생합니다.
+  // SQLite 호환 포맷으로 변환하여 정확한 비교를 보장합니다.
+  return new Date(now.getTime() - ms).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 }
 
 /** Handler */
