@@ -7,8 +7,13 @@ import Header from './Header'
 
 export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { token, login, logout, isLoading } = useAuth()
+  const [mounted, setMounted] = React.useState(false)
 
-  if (isLoading) {
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-blue-500">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

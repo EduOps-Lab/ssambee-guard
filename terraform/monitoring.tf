@@ -16,7 +16,7 @@ resource "aws_lambda_function" "monitoring_dashboard" {
 
   environment {
     variables = {
-      TURSO_DATABASE_URL              = var.turso_database_url
+      TURSO_DATABASE_URL     = var.turso_database_url
       TURSO_AUTH_TOKEN       = var.turso_auth_token
       JWT_SECRET             = var.jwt_secret
       INTERNAL_INGEST_SECRET = var.internal_ingest_secret
@@ -32,9 +32,9 @@ resource "aws_lambda_function_url" "monitoring_url" {
 
   cors {
     allow_credentials = true
-    allow_origins     = ["*"] # Adjust to your Vercel URL in production
+    allow_origins     = ["*"]
     allow_methods     = ["*"]
-    allow_headers     = ["content-type", "authorization", "x-internal-secret"]
+    allow_headers     = ["content-type", "authorization", "Authorization", "x-internal-secret"]
     expose_headers    = ["*"]
     max_age           = 3600
   }
@@ -46,8 +46,8 @@ resource "aws_iam_role" "monitoring_lambda_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
     }]
   })

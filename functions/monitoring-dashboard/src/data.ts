@@ -29,8 +29,6 @@ type MetricRow = {
 
 const commonHeaders = {
   "Content-Type": "application/json",
-  // "Access-Control-Allow-Origin": "http://localhost:3000", // 운영시는 특정 도메인으로
-  // "Access-Control-Allow-Credentials": "true",
 };
 
 function getFromDateISO(range: string | undefined): string {

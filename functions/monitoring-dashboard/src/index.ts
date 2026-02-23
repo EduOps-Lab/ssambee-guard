@@ -11,43 +11,45 @@ type MaxIdRow = {
 
 export const handler = awslambda.streamifyResponse(
   async (event: APIGatewayProxyEventV2, responseStream: any, context: any) => {
-    const path = event.rawPath;
+    const path = event.rawPath || "";
     const method = event.requestContext?.http?.method;
+
+    // 경로 정규화
+    const normalizedPath = path.replace(/\/$/, "") || "/";
+
     const headers: Record<string, string> = {
-      // "Content-Type": "application/json",
-      // "Access-Control-Allow-Origin": "http://localhost:3000",
-      // "Access-Control-Allow-Headers":
-      //   "Content-Type,Authorization,x-internal-secret",
-      // "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
-      // "Access-Control-Allow-Credentials": "true",
+      "Content-Type": "application/json",
     };
 
-    if (method === "OPTIONS") {
-      const response = awslambda.HttpResponseStream.from(responseStream, {
-        statusCode: 204,
-        headers,
-      });
-      response.end();
-      return;
-    }
+    /** 헬퍼: 상충하는 CORS 헤더 제거 (인프라 레벨 CORS와 충돌 방지) */
+    const getSafeHeaders = (resHeaders?: any) => {
+      const merged = { ...headers, ...resHeaders };
+      const filtered: Record<string, string> = {};
+      for (const key in merged) {
+        if (!key.toLowerCase().startsWith("access-control-")) {
+          filtered[key] = merged[key];
+        }
+      }
+      return filtered;
+    };
 
     /** 연결 불필요 라우트: Login / Register */
-    if (path === "/login" && method === "POST") {
+    if (normalizedPath === "/login" && method === "POST") {
       const res = await login(event as unknown as APIGatewayProxyEvent);
       const response = awslambda.HttpResponseStream.from(responseStream, {
         statusCode: res.statusCode,
-        headers: { ...headers, ...res.headers },
+        headers: getSafeHeaders(res.headers),
       });
       response.write(res.body);
       response.end();
       return;
     }
 
-    if (path === "/register" && method === "POST") {
+    if (normalizedPath === "/register" && method === "POST") {
       const res = await register(event as unknown as APIGatewayProxyEvent);
       const response = awslambda.HttpResponseStream.from(responseStream, {
         statusCode: res.statusCode,
-        headers: { ...headers, ...res.headers },
+        headers: getSafeHeaders(res.headers),
       });
       response.write(res.body);
       response.end();
@@ -55,13 +57,13 @@ export const handler = awslambda.streamifyResponse(
     }
 
     /** 인가 확인 라우트 */
-    if (path === "/ingest" && method === "POST") {
+    if (normalizedPath === "/ingest" && method === "POST") {
       const ingestSecret = process.env.INTERNAL_INGEST_SECRET;
       const providedSecret = event.headers["x-internal-secret"];
       if (ingestSecret && providedSecret !== ingestSecret) {
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: 403,
-          headers,
+          headers: getSafeHeaders(),
         });
         response.write(JSON.stringify({ message: "Forbidden" }));
         response.end();
@@ -70,21 +72,23 @@ export const handler = awslambda.streamifyResponse(
       const res = await ingest(event as unknown as APIGatewayProxyEvent);
       const response = awslambda.HttpResponseStream.from(responseStream, {
         statusCode: res.statusCode,
-        headers: { ...headers, ...res.headers },
+        headers: getSafeHeaders(res.headers),
       });
       response.write(res.body);
       response.end();
       return;
     }
 
-    /** 인증 필수 대시보그 API 및 SSE */
-    const authRoutes = ["/logs", "/alerts", "/metrics", "/stream", "/users", "/users/withdraw"];
-    if (authRoutes.some(r => path.startsWith(r))) {
+    /** 인증 필수 대시보드 API 및 SSE - 정교한 경로 매칭 */
+    const authRoutes = ["/logs", "/alerts", "/metrics", "/stream", "/users"];
+    const isAuthRequired = authRoutes.some(r => normalizedPath === r || normalizedPath.startsWith(r + "/"));
+
+    if (isAuthRequired) {
       const user = verifyToken(event as APIGatewayProxyEventV2);
       if (!user) {
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: 401,
-          headers,
+          headers: getSafeHeaders(),
         });
         response.write(JSON.stringify({ message: "Unauthorized" }));
         response.end();
@@ -94,45 +98,45 @@ export const handler = awslambda.streamifyResponse(
       const decodedUser = user as { userId: number; username: string; role: string };
 
       /** 사용자 관리 API (Admin Only) */
-      if (path === "/users" && method === "GET") {
+      if (normalizedPath === "/users" && method === "GET") {
         if (decodedUser.role !== "admin") {
-          const response = awslambda.HttpResponseStream.from(responseStream, { statusCode: 403, headers });
+          const response = awslambda.HttpResponseStream.from(responseStream, { statusCode: 403, headers: getSafeHeaders() });
           response.write(JSON.stringify({ message: "Forbidden" }));
           response.end();
           return;
         }
-        const res = await getUsers();
+        const res: any = await getUsers();
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: res.statusCode,
-          headers: { ...headers, ...res.headers },
+          headers: getSafeHeaders(res.headers),
         });
         response.write(res.body);
         response.end();
         return;
       }
 
-      if (path.startsWith("/users/") && (method === "PATCH" || method === "DELETE")) {
+      if (normalizedPath.startsWith("/users/") && (method === "PATCH" || method === "DELETE")) {
         if (decodedUser.role !== "admin") {
-          const response = awslambda.HttpResponseStream.from(responseStream, { statusCode: 403, headers });
+          const response = awslambda.HttpResponseStream.from(responseStream, { statusCode: 403, headers: getSafeHeaders() });
           response.write(JSON.stringify({ message: "Forbidden" }));
           response.end();
           return;
         }
-        const res = await handleUserAction(event as APIGatewayProxyEventV2);
+        const res: any = await handleUserAction(event as APIGatewayProxyEventV2);
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: res.statusCode,
-          headers: { ...headers, ...res.headers },
+          headers: getSafeHeaders(res.headers),
         });
         response.write(res.body);
         response.end();
         return;
       }
 
-      if (path === "/users/withdraw" && method === "POST") {
-        const res = await requestWithdrawal(decodedUser.userId);
+      if (normalizedPath === "/users/withdraw" && method === "POST") {
+        const res: any = await requestWithdrawal(decodedUser.userId);
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: res.statusCode,
-          headers: { ...headers, ...res.headers },
+          headers: getSafeHeaders(res.headers),
         });
         response.write(res.body);
         response.end();
@@ -140,49 +144,48 @@ export const handler = awslambda.streamifyResponse(
       }
 
       /** 일반 데이터 조회 */
-      if (path === "/logs") {
-        const res = await getLogs(event as unknown as APIGatewayProxyEvent);
+      if (normalizedPath === "/logs") {
+        const res: any = await getLogs(event as any);
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: res.statusCode,
-          headers: { ...headers, ...res.headers },
+          headers: getSafeHeaders(res.headers),
         });
         response.write(res.body);
         response.end();
         return;
       }
 
-      if (path === "/alerts") {
-        const res = await getAlerts(event as unknown as APIGatewayProxyEvent);
+      if (normalizedPath === "/alerts") {
+        const res: any = await getAlerts(event as any);
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: res.statusCode,
-          headers: { ...headers, ...res.headers },
+          headers: getSafeHeaders(res.headers),
         });
         response.write(res.body);
         response.end();
         return;
       }
 
-      if (path === "/metrics") {
-        const res = await getMetrics(event as unknown as APIGatewayProxyEvent);
+      if (normalizedPath === "/metrics") {
+        const res: any = await getMetrics(event as any);
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: res.statusCode,
-          headers: { ...headers, ...res.headers },
+          headers: getSafeHeaders(res.headers),
         });
         response.write(res.body);
         response.end();
         return;
       }
 
-      if (path === "/stream") {
+      if (normalizedPath === "/stream") {
         /** SSE 스트리밍 시작 */
         const response = awslambda.HttpResponseStream.from(responseStream, {
           statusCode: 200,
-          headers: {
-            ...headers,
+          headers: getSafeHeaders({
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-          },
+          }),
         });
 
         let lastBioId = 0;
@@ -282,7 +285,7 @@ export const handler = awslambda.streamifyResponse(
 
     const response = awslambda.HttpResponseStream.from(responseStream, {
       statusCode: 404,
-      headers,
+      headers: getSafeHeaders(),
     });
     response.write(JSON.stringify({ message: "Not Found" }));
     response.end();

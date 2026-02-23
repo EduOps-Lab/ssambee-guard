@@ -5,11 +5,11 @@ import Dashboard from '@/components/Dashboard'
 import { useAuth } from '@/providers/AuthProvider'
 
 export default function Home() {
-  const { token, logout } = useAuth()
+  const { token } = useAuth()
 
   return (
     <AuthenticatedLayout>
-      {token && <Dashboard token={token} onLogout={logout} />}
+      {token && <Dashboard token={token} />}
     </AuthenticatedLayout>
   )
 }

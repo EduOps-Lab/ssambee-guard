@@ -83,6 +83,16 @@ export const handler = async (
 
     const body = JSON.parse(event.body);
     const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+    const INGEST_SECRET = process.env.INTERNAL_INGEST_SECRET;
+
+    // 보안 시크릿 검증 (설정되어 있을 경우에만)
+    if (INGEST_SECRET) {
+      const providedSecret = event.headers['x-internal-secret'] || event.headers['X-Internal-Secret'];
+      if (providedSecret !== INGEST_SECRET) {
+        console.warn('[Central Monitor] Unauthorized access attempt');
+        return { statusCode: 403, body: 'Forbidden' };
+      }
+    }
 
     if (!DISCORD_WEBHOOK_URL) {
       console.error("Missing DISCORD_WEBHOOK_URL");

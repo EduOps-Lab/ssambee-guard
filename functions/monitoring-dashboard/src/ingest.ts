@@ -22,7 +22,6 @@ const IngestSchema = z.object({
 
 const commonHeaders = {
   "Content-Type": "application/json",
-  // "Access-Control-Allow-Origin": "http://localhost:3000",
 };
 
 export async function ingest(

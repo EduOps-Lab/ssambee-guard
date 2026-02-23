@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import Link from "next/link";
+import { API_URL } from "@/lib/config";
 
 interface LoginProps {
   onLogin: (token: string) => void;
@@ -19,8 +20,7 @@ export default function Login({ onLogin }: LoginProps) {
     setLoading(true);
     setError("");
     try {
-      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-      const targetUrl = `${apiUrl}/login`;
+      const targetUrl = `${API_URL}/login`;
       const response = await axios.post(
         targetUrl,
         { username, password },

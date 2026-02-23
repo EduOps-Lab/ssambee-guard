@@ -37,9 +37,10 @@ resource "aws_lambda_function" "central_monitor" {
 
   environment {
     variables = {
-      DISCORD_WEBHOOK_URL = var.discord_webhook_url
-      TURSO_DATABASE_URL                        = var.turso_database_url
-      TURSO_AUTH_TOKEN        = var.turso_auth_token
+      DISCORD_WEBHOOK_URL    = var.discord_webhook_url
+      TURSO_DATABASE_URL     = var.turso_database_url
+      TURSO_AUTH_TOKEN       = var.turso_auth_token
+      INTERNAL_INGEST_SECRET = var.internal_ingest_secret
     }
   }
 }
@@ -60,11 +61,11 @@ resource "aws_apigatewayv2_api" "lambda_api" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = ["http://localhost:3000"]
-    allow_methods = ["POST", "GET", "OPTIONS"]
-    allow_headers = ["content-type", "authorization", "x-internal-secret"]
+    allow_origins     = ["http://localhost:3000"]
+    allow_methods     = ["POST", "GET", "OPTIONS"]
+    allow_headers     = ["content-type", "authorization", "x-internal-secret"]
     allow_credentials = true
-    max_age = 3000
+    max_age           = 3000
   }
 }
 
@@ -95,8 +96,8 @@ resource "aws_iam_role" "lambda_exec" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
     }]
   })
@@ -147,8 +148,8 @@ resource "aws_lambda_permission" "api_gw" {
 
 # SQS 큐 생성 (Kakao 알림용)
 resource "aws_sqs_queue" "kakao_queue" {
-  name                      = "kakao-notification-queue"
-  message_retention_seconds = 86400
+  name                       = "kakao-notification-queue"
+  message_retention_seconds  = 86400
   visibility_timeout_seconds = 60
 }
 
@@ -167,7 +168,7 @@ resource "aws_s3_bucket" "tf_state" {
 }
 
 resource "aws_s3_bucket_public_access_block" "tf_state_block" {
-  bucket = aws_s3_bucket.tf_state.id
+  bucket                  = aws_s3_bucket.tf_state.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
