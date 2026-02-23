@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { Activity, LogOut, Moon, Sun, Users, Terminal, LayoutDashboard } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
 import Link from 'next/link'
@@ -34,15 +33,15 @@ export default function Header({ token, onLogout }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
+    <header className="sticky top-0 z-50 w-full border-b backdrop-blur-md bg-card/80">
+      <div className="container flex justify-between items-center px-4 mx-auto h-16">
+        <div className="flex gap-6 items-center">
+          <Link href="/" className="flex gap-2 items-center">
             <Activity className="w-8 h-8 text-blue-500" />
-            <span className="text-xl font-bold hidden md:block">SSAMBEE GUARD</span>
+            <span className="hidden text-xl font-bold md:block">SSAMBEE GUARD</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden gap-1 items-center md:flex">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -52,7 +51,7 @@ export default function Header({ token, onLogout }: HeaderProps) {
                   href={item.href}
                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-blue-500/10 text-blue-500'
+                      ? 'text-blue-500 bg-blue-500/10'
                       : 'hover:bg-accent hover:text-accent-foreground text-muted-foreground'
                   }`}
                 >
@@ -64,16 +63,16 @@ export default function Header({ token, onLogout }: HeaderProps) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex gap-3 items-center">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-md hover:bg-accent text-muted-foreground transition-colors"
+            className="p-2 rounded-md transition-colors hover:bg-accent text-muted-foreground"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
           </button>
 
-          <div className="h-6 w-px bg-border mx-1" />
+          <div className="mx-1 w-px h-6 bg-border" />
 
           <button
             onClick={onLogout}
