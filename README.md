@@ -50,6 +50,29 @@ AWS Lambda와 Turso(LibSQL) 기반으로 구축된 오픈소스 모니터링 시
 | **Infra**    | ![Terraform](https://img.shields.io/badge/Terraform-844FBA?style=for-the-badge&logo=terraform&logoColor=white) ![AWS](https://img.shields.io/badge/Amazon_AWS-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white) ![Solapi](https://img.shields.io/badge/Solapi-FFCD00?style=for-the-badge&logo=kakao&logoColor=black)                                                                                                                                                                                                                                     |
 | **Analytics**| ![Google Analytics](https://img.shields.io/badge/Google_Analytics-E37400?style=for-the-badge&logo=google-analytics&logoColor=white) ![MS Clarity](https://img.shields.io/badge/MS_Clarity-0078D4?style=for-the-badge&logo=microsoft&logoColor=white)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
+## Run Docker
+```
+docker-compose up --build
+
+Now you can access the dashboard UI at `http://localhost:3000`.
+```
+
+## 2. Hello World (Log Ingest Test)
+
+```bash
+curl -X POST https://<your-lambda-url>/ingest \
+  -H "Content-Type: application/json" \
+  -H "x-internal-secret: <your-internal-secret>" \
+  -d '{
+    "logs": [
+      {
+        "level": "INFO",
+        "message": "Hello World! ssambee-guard is running normally.",
+        "metadata": { "source": "curl-test" }
+      }
+    ]
+  }'
+```
 ---
 
 ## 📁 프로젝트 구조
