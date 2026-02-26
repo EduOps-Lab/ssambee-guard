@@ -146,6 +146,26 @@ $ terraform apply
 | ![창기](https://github.com/p-changki.png?s=20) | ![유리](https://github.com/yoorrll.png?s=20) | ![경민](https://github.com/play-ancora-gyungmin.png?s=20) | ![윤기](https://github.com/rklpoi5678.png?s=20) |
 |                  PM & 프론트                   |                    프론트                    |                          백엔드                           |                  백엔드 & 배포                  |
 
+## 🤝 Contributing
+
+Thank you for your interest in `ssambee-guard`! Contributions are always welcome.
+
+- If you find a bug or have a suggestion, please create an **Issue**.
+- To contribute code, please **Fork** the repository and send a **Pull Request** from a **Feature Branch**.
+- We recommend starting with issues labeled **Good First Issue**.
+
+"Your small contribution can save someone's monthly server costs."
+
+---
+
+## 🔗 Links
+
+- **Issue Tracker**: [GitHub Issues](https://github.com/your-repo/ssambee-guard/issues)
+- **Related Projects**:
+  - [Solapi SDK](https://github.com/solapi/solapi-nodejs)
+  - [Turso (LibSQL)](https://turso.tech)
+
+---
 ---
 
 <div align="center">
